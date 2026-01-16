@@ -52,18 +52,16 @@ export class NpmAuditScanner {
 
         // npm audit structure (v7+)
         // data.vulnerabilities is an object where keys are package names
-        // data.advisories (older versions)
 
         if (data.vulnerabilities) {
             for (const [key, val] of Object.entries(data.vulnerabilities)) {
                 const vuln = val as any;
-                const severity = (vuln.severity || 'low').toLowerCase() as Vulnerability['severity'];
 
-                // npm audit aggregates by package, but we might want individual issues.
-                // For now, let's map the package-level record.
-
-                // If there are multiple 'via' sources, it implies multiple vulnerabilities or a dependency chain.
-                // We will simplify for now.
+                // Normalize severity (handle npm's 'moderate' and 'info')
+                let severityStr = (vuln.severity || 'low').toLowerCase();
+                if (severityStr === 'moderate') severityStr = 'medium';
+                if (severityStr === 'info') severityStr = 'low';
+                const severity = severityStr as Vulnerability['severity'];
 
                 vulnerabilities.push({
                     id: `NPM-${key}-${vuln.via?.[0]?.source || 'audit'}`, // synthesized ID
@@ -73,7 +71,7 @@ export class NpmAuditScanner {
                     version: vuln.range || 'unknown',
                     fixedIn: vuln.fixAvailable ? ['npm audit fix'] : [],
                     description: `Dependency path: ${key}`,
-                    cvssScore: undefined // npm audit doesn't always give easy access to this in simple view
+                    cvssScore: undefined
                 });
 
                 summary.total++;
@@ -83,14 +81,9 @@ export class NpmAuditScanner {
             }
         }
 
-        // Populate standard total/counts if available in metadata
-        if (data.metadata && data.metadata.vulnerabilities) {
-            summary.total = data.metadata.vulnerabilities.total;
-            summary.critical = data.metadata.vulnerabilities.critical;
-            summary.high = data.metadata.vulnerabilities.high;
-            summary.medium = data.metadata.vulnerabilities.medium;
-            summary.low = data.metadata.vulnerabilities.low;
-        }
+        // Note: We rely on our manual count above to ensure consistency between
+        // the vulnerabilities list and the summary counts, rather than using
+        // data.metadata which might mismatch or use non-standard keys.
 
         return {
             timestamp: new Date().toISOString(),

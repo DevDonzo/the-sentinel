@@ -4,6 +4,8 @@ export interface PrConfig {
     branch: string;
     title: string;
     body: string;
+    severity?: string;
+    labels?: string[];
 }
 
 export class DiplomatAgent {
@@ -19,12 +21,7 @@ export class DiplomatAgent {
         console.log(`🕊️ Diplomat: Preparing to open PR for ${config.branch}`);
 
         if (!this.octokit) {
-            console.warn("⚠️ Diplomat: No GITHUB_TOKEN found. Running in MOCK MODE.");
-            console.log(`📋 [MOCK] Would create PR:`);
-            console.log(`   Branch: ${config.branch}`);
-            console.log(`   Title: ${config.title}`);
-            console.log(`   Body: ${config.body}`);
-            return "https://github.com/mock/repo/pull/1";
+            throw new Error("❌ Diplomat: No GITHUB_TOKEN found. Real API Integration requires a token.");
         }
 
         try {
@@ -40,15 +37,25 @@ export class DiplomatAgent {
                 title: config.title,
                 body: config.body,
                 head: config.branch,
-                base: 'main', // Default base branch, could be made configurable
+                base: 'main', // Default base branch
             });
 
             console.log(`✅ Diplomat: PR created successfully!`);
             console.log(`   URL: ${response.data.html_url}`);
             console.log(`   Number: #${response.data.number}`);
 
-            // Optionally add labels
-            await this.addLabels(owner, repo, response.data.number, ['security', 'automated']);
+            // 1. Smart Labelling
+            const labels = ['security', 'automated'];
+            if (config.severity) {
+                labels.push(`severity:${config.severity.toLowerCase()}`);
+            }
+            if (config.labels) {
+                labels.push(...config.labels);
+            }
+            await this.addLabels(owner, repo, response.data.number, labels);
+
+            // 2. Assignee Management
+            await this.addAssignees(owner, repo, response.data.number);
 
             return response.data.html_url;
         } catch (error: any) {
@@ -126,6 +133,29 @@ export class DiplomatAgent {
         } catch (error: any) {
             console.warn(`⚠️ Diplomat: Failed to add labels: ${error.message}`);
             // Don't throw - labels are nice-to-have
+        }
+    }
+
+    /**
+     * Auto-assign the PR to the repo owner or configured user
+     */
+    private async addAssignees(owner: string, repo: string, issueNumber: number): Promise<void> {
+        if (!this.octokit) return;
+
+        try {
+            // Priority: GITHUB_ASSIGNEE env var -> Repo Owner
+            // Note: If 'owner' is an organization, this might fail unless GITHUB_ASSIGNEE is set.
+            const assignee = process.env.GITHUB_ASSIGNEE || owner;
+
+            await this.octokit.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                assignees: [assignee]
+            });
+            console.log(`👤 Diplomat: Assigned PR to ${assignee}`);
+        } catch (error: any) {
+            console.warn(`⚠️ Diplomat: Failed to assign PR: ${error.message}`);
         }
     }
 

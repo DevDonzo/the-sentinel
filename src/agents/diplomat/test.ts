@@ -92,20 +92,24 @@ async function runTests() {
         return Array.isArray(branches);
     })();
 
-    console.log("\n--- Test Suite 4: Mock PR Creation ---");
+    console.log("\n--- Test Suite 4: Real API Validation (No Token) ---");
 
-    await test("Create PR in mock mode", async () => {
-        const prUrl = await diplomat.createPullRequest({
-            branch: "sentinel/fix-test",
-            title: "[SECURITY] Fix for Test Vulnerability",
-            body: "Test PR body"
-        });
-        return typeof prUrl === 'string' && prUrl.length > 0;
+    await test("createPullRequest throws without GITHUB_TOKEN", async () => {
+        try {
+            await diplomat.createPullRequest({
+                branch: "sentinel/fix-test",
+                title: "[SECURITY] Fix for Test Vulnerability",
+                body: "Test PR body"
+            });
+            return false; // Should have failed
+        } catch (error: any) {
+            return error.message.includes("No GITHUB_TOKEN found");
+        }
     })();
 
     console.log("\n--- Test Suite 5: Integration Tests ---");
 
-    await test("Process all sentinel branches (mock mode)", async () => {
+    await test("Process all sentinel branches (handles errors gracefully)", async () => {
         const prUrls = await diplomat.processAllSentinelBranches();
         return Array.isArray(prUrls);
     })();

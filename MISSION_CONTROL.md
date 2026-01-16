@@ -16,13 +16,13 @@
 - [x] **001: Initial Snyk Integration**
     - Implement basic `snyk test --json` wrapper.
     - Parse outputs and save to `scan-results.json`.
-- [ ] **002: Reliability Layer**
+- [x] **002: Reliability Layer**
     - Add retry logic for the `exec` command (Snyk API sometimes times out).
     - Handle cases where `snyk` is not in the system PATH gracefully.
-- [ ] **003: Multi-Scanner Support**
+- [x] **003: Multi-Scanner Support**
     - Add support for `npm audit --json` as a fallback if Snyk fails.
     - Normalize `npm audit` output to match the `ScanResults` interface.
-- [ ] **004: Dashboarding**
+- [x] **004: Dashboarding**
     - Generate a simple HTML report alongside the JSON for human review.
 
 ---
@@ -34,14 +34,14 @@
 - [x] **001: Simulation Engine**
     - Read `scan-results.json` and prioritize issues.
     - "Simulate" git operations via logs.
-- [ ] **002: Real Git Operations**
+- [x] **002: Real Git Operations**
     - create `src/agents/engineer/git.ts`.
     - Implement `checkoutBranch(name)`, `commit(message)`, `push()`.
     - Replace console mocks in `applyFix()` with real calls.
-- [ ] **003: Package Patcher**
+- [x] **003: Package Patcher**
     - Implement logic to actually read `package.json`, find the dependency, and update the version string.
     - Run `npm install` to update `package-lock.json`.
-- [ ] **004: Verification Loop**
+- [x] **004: Verification Loop**
     - Before committing, run `npm test`.
     - If tests fail, rollback changes and log the failure.
 
@@ -54,12 +54,12 @@
 - [x] **001: PR Framework**
     - Logic to detect branches and format PR bodies.
     - Mock mode for missing tokens.
-- [ ] **002: Real API Integration**
+- [x] **002: Real API Integration**
     - Verify `GITHUB_TOKEN` permissions.
     - Ensure `createPullRequest` actually hits the GitHub API.
-- [ ] **003: Smart Labelling**
+- [x] **003: Smart Labelling**
     - Add logic to label PRs based on severity (e.g., `severity:critical`, `vuln:snyk`).
-- [ ] **004: Assignee Management**
+- [x] **004: Assignee Management**
     - Automatically assign the PR to the repo owner or a specific user defined in `.env`.
 
 ---

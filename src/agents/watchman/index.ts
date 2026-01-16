@@ -3,11 +3,15 @@
  * The Watchman - Security Scanner Agent
  * 
  * This is the entry point for The Watchman agent.
- * It scans the codebase for security vulnerabilities and outputs
- * a standardized JSON format to scan-results/scan-results.json
+ * It orchestrates the scanning process, handling fallbacks (Snyk -> npm audit)
+ * and generating reports (JSON + HTML).
  */
 
-import { SnykScanner } from './snyk';
+import * as fs from 'fs';
+import * as path from 'path';
+import { SnykScanner, ScanResult } from './snyk';
+import { NpmAuditScanner } from './npm-audit';
+import { HtmlReportGenerator } from './html-report';
 
 async function main() {
     console.log('🛡️  THE WATCHMAN - Security Scanner Agent');
@@ -43,29 +47,80 @@ async function main() {
         }
     }
 
+    let results: ScanResult | null = null;
+    let scannerUsed = 'snyk';
+
+    // 1. Try Snyk Scanner
     try {
-        // Create scanner with options
-        const scanner = new SnykScanner(options);
+        const snykScanner = new SnykScanner(options);
+        results = await snykScanner.test();
+        // SnykScanner saves JSON internally
+    } catch (snykError: any) {
+        console.warn(`\n⚠️  Snyk scan failed: ${snykError.message}`);
+        console.warn('🔄 Switching to fallback scanner: npm audit');
 
-        // Run the scan
-        const results = await scanner.test();
+        // 2. Fallback to npm audit
+        try {
+            const auditScanner = new NpmAuditScanner();
+            results = await auditScanner.scan();
+            scannerUsed = 'npm-audit';
 
-        // Print summary
-        scanner.printSummary(results);
+            // Save JSON explicitly for npm audit (as it's just a simple class rn)
+            saveResults(results);
 
-        // Exit with appropriate code
-        const hasHighPriority = scanner.filterHighPriority(results).length > 0;
-        if (hasHighPriority) {
-            console.log('\n⚠️  High priority vulnerabilities found!');
-            process.exit(1);
-        } else {
-            console.log('\n✅ No high priority vulnerabilities found.');
-            process.exit(0);
+        } catch (auditError: any) {
+            console.error(`\n❌ All scanners failed!`);
+            console.error(`1. Snyk: ${snykError.message}`);
+            console.error(`2. npm audit: ${auditError.message}`);
+            process.exit(2);
         }
-    } catch (error: any) {
-        console.error('\n❌ Scan failed:', error.message);
-        process.exit(2);
     }
+
+    if (!results) {
+        // Should not happen due to process.exit(2) above
+        process.exit(2);
+        return;
+    }
+
+    // 3. Generate Dashboard
+    try {
+        const htmlGenerator = new HtmlReportGenerator();
+        htmlGenerator.generate(results);
+    } catch (reportError: any) {
+        console.error(`⚠️  Failed to generate HTML report: ${reportError.message}`);
+        // Non-fatal, continue to exit code check
+    }
+
+    console.log(`\n✅ Scan completed successfully using [${scannerUsed}]`);
+
+    // Exit with appropriate code
+    const criticalCount = results.summary.critical + results.summary.high;
+    if (criticalCount > 0) {
+        console.log(`\n⚠️  High priority vulnerabilities found: ${criticalCount}`);
+        process.exit(1);
+    } else {
+        console.log('\n✅ No high priority vulnerabilities found.');
+        process.exit(0);
+    }
+}
+
+function saveResults(result: ScanResult): void {
+    const outputDir = path.resolve(process.cwd(), 'scan-results');
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    const filename = `scan-${new Date().toISOString().replace(/:/g, '-')}.json`;
+    const filepath = path.join(outputDir, filename);
+    const latestPath = path.join(outputDir, 'scan-results.json');
+
+    const jsonContent = JSON.stringify(result, null, 2);
+
+    fs.writeFileSync(filepath, jsonContent);
+    fs.writeFileSync(latestPath, jsonContent);
+
+    console.log(`💾 Scan results saved to: ${filepath}`);
+    console.log(`💾 Latest results: ${latestPath}`);
 }
 
 function printHelp() {
@@ -85,9 +140,6 @@ Examples:
 
   # Run with custom timeout
   npx ts-node src/agents/watchman/index.ts --timeout 600
-
-  # Run with more retries
-  npx ts-node src/agents/watchman/index.ts --max-retries 5
 
 Exit Codes:
   0 - Success, no high priority vulnerabilities

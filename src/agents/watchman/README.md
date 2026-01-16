@@ -228,7 +228,9 @@ The scanner provides detailed logging:
 ## Future Enhancements
 
 Potential improvements for The Watchman:
-- [ ] Support for additional scanners (npm audit, Semgrep, CodeQL)
+- [x] Support for npm audit fallback scanner (`npm-audit.ts`)
+- [x] HTML report generation (`html-report.ts`)
+- [ ] Support for additional scanners (Semgrep, CodeQL)
 - [ ] Parallel scanning with multiple tools
 - [ ] Scan result deduplication
 - [ ] Historical trend analysis

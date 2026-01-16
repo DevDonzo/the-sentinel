@@ -237,7 +237,8 @@ npx ts-node src/agents/diplomat/demo.ts
 
 ## Future Enhancements
 
-- [ ] Auto-assign reviewers
+- [x] Auto-assign reviewers (implemented via `addAssignees()`)
+- [x] Smart labeling with severity tags (`severity:critical`, etc.)
 - [ ] Configurable base branch (not just `main`)
 - [ ] Support for draft PRs
 - [ ] Integration with CI/CD status checks

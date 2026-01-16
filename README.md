@@ -34,15 +34,20 @@ Build a fully autonomous agent that:
 the-sentinel/
 ├── SENTINEL_CORE.md       # Rules of Engagement (immutable)
 ├── AI_ONBOARDING.md       # Complete guide for AI agents
+├── MULTI_AGENT_ARCHITECTURE.md  # Architecture design
 ├── SPEC/                  # Task specifications
-│   └── 001-baseline.md    # Initial security baseline
+│   ├── 001-baseline.md    # Initial security baseline
+│   └── 002-auto-fix.md    # Auto-fixing specification
 ├── src/
-│   ├── index.ts           # Main entry point
+│   ├── index.ts           # Main orchestrator
 │   ├── core/              # Rules & spec loading
-│   ├── scanners/          # Security tool wrappers
-│   ├── fixer/             # Auto-patch logic (planned)
-│   ├── pr/                # GitHub PR automation (planned)
-│   └── utils/             # Helpers
+│   │   ├── rules.ts       # Rules of Engagement loader
+│   │   └── spec.ts        # Spec-Driven Development loader
+│   ├── agents/
+│   │   ├── watchman/      # 🛡️ Scanner Agent (Snyk + npm audit)
+│   │   ├── engineer/      # 🔧 Fixer Agent (diagnosis & patching)
+│   │   └── diplomat/      # 🕊️ PR Agent (GitHub automation)
+│   └── utils/             # Helpers & mock data
 ├── scan-results/          # Scan output (gitignored)
 └── dist/                  # Compiled output
 ```
@@ -90,35 +95,44 @@ npm start
 
 ### ✅ Milestone 2: "The Watchman" (Complete)
 - Full Snyk integration with JSON parsing
+- npm audit fallback scanner
+- HTML report generation
 - Vulnerability filtering (Critical/High priority)
 - Automated scan result storage
-- Summary reporting
 
-### 🚧 Milestone 3: "The Engineer" (Next)
-- AI-powered diagnosis engine
-- Automated code patching
-- Git branch management
-- Fix verification
+### ✅ Milestone 3: "The Engineer" (Complete)
+- Diagnosis engine that reads scan results
+- Automated code patching (package.json updates)
+- Git branch management (`sentinel/fix-*` branches)
+- Fix verification with `npm test`
+- Auto-revert on test failure
+
+### ✅ Milestone 4: "The Diplomat" (Complete)
+- GitHub PR automation via Octokit
+- Auto-labeling (`security`, `severity:*`)
+- Auto-assignment of reviewers
+- Branch detection and pushing
+- Semantic PR title/body generation
 
 ### 🔮 Upcoming Milestones
-- **Milestone 4**: PR Automation ("The Diplomat")
-- **Milestone 5**: CI/CD Integration ("The Sentinel")
-- **Milestone 6**: SRE Monitoring (Optional)
+- **Milestone 5**: CI/CD Integration (GitHub Actions triggers)
+- **Milestone 6**: SRE Monitoring (Optional - health checks & auto-recovery)
 
 ## 🎮 Usage
 
-### Run a Security Scan
+### Run The Full Pipeline
 
 ```bash
 npm start
 ```
 
 The Sentinel will:
-1. Load Rules of Engagement
-2. Read active specifications
-3. Execute security scans
-4. Filter high-priority vulnerabilities
-5. Save results to `scan-results/scan-results.json`
+1. Load Rules of Engagement from `SENTINEL_CORE.md`
+2. Read active specifications from `SPEC/`
+3. **Watchman**: Execute security scans (Snyk → npm audit fallback)
+4. Filter high-priority vulnerabilities (Critical/High)
+5. **Engineer**: Create fix branch, patch `package.json`, run `npm install`, verify with `npm test`
+6. **Diplomat**: Push branch to GitHub and create a Pull Request with labels
 
 ### Development Mode
 

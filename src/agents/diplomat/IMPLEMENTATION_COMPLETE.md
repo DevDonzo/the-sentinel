@@ -162,13 +162,16 @@ const prUrls = await diplomat.processAllSentinelBranches();
 
 ---
 
-## 🚀 Next Steps (Future Enhancements)
+## 🚀 Implemented Features
 
-As noted in MULTI_AGENT_ARCHITECTURE.md:
+The task from MULTI_AGENT_ARCHITECTURE.md has been completed:
 > **Parallel Task for User**: "Create the Octokit module to auto-assign reviewers to created PRs."
 
-Additional enhancements could include:
-- Auto-assign reviewers based on CODEOWNERS
+✅ **Implemented:**
+- Auto-assign PRs to repo owner or `GITHUB_ASSIGNEE` env var
+- Smart labeling with `severity:*` tags based on vulnerability severity
+
+**Future enhancements:**
 - Configurable base branch (not just `main`)
 - Draft PR support
 - CI/CD integration

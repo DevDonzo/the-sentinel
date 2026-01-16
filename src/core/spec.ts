@@ -7,7 +7,8 @@ export interface Spec {
     content: string;
 }
 
-const SPEC_DIR = path.resolve(process.cwd(), 'SPEC');
+const SENTINEL_HOME = path.resolve(__dirname, '../../');
+const SPEC_DIR = path.join(SENTINEL_HOME, 'SPEC');
 
 export function loadSpecs(): Spec[] {
     if (!fs.existsSync(SPEC_DIR)) {

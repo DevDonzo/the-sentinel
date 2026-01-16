@@ -12,6 +12,7 @@ The Sentinel is a production-grade, self-healing security agent designed to live
 
 ## 🚀 Key Features
 
+- 🚁 **Remote Patrol**: Now supports patrolling **any** public or private GitHub repository. Simply provide the URL, and the Sentinel will clone, scan, and propose fixes.
 - 🔍 **Deep Scanning**: Integrated with **Snyk** for dependency and container analysis, with a robust fallback to **npm audit**.
 - 🧠 **Autonomous Diagnosis**: Intelligent prioritization of Critical and High-severity vulnerabilities.
 - 🔧 **Self-Healing**: Automatically creates fix branches and patches `package.json` with secure versions.
@@ -29,12 +30,6 @@ The Sentinel operates as a coordinate "Council of Agents," ensuring separation o
 1.  **🛡️ The Watchman (Scanner)**: Monitors the environment for threats. Implements retry logic and atomic reporting.
 2.  **🔧 The Engineer (Fixer)**: Analyzes threats and applies precision code patches on isolated feature branches.
 3.  **🕊️ The Diplomat (Liaison)**: Manages the downstream communication and PR lifecycle on GitHub.
-
-### Core Security Principles (`SENTINEL_CORE.md`)
-- **Safety First**: Never merge to `main` without human approval.
-- **Isolation**: All work is performed on `sentinel/fix-*` branches.
-- **Integrity**: No PR is proposed unless it passes the full test suite.
-- **Secrecy**: Total isolation from `.env` and sensitive production keys.
 
 ---
 
@@ -55,42 +50,33 @@ npm install
 
 ### Configuration
 
-Create a `.env` file from the template:
+Create a `.env` file from the [setup guide](#configuration):
+`GITHUB_TOKEN`, `SNYK_TOKEN`, and `GITHUB_ASSIGNEE` are required.
 
+---
+
+## 🎮 Usage
+
+### 🏡 Mode 1: Local Patrol (Default)
+Scan and fix the current project directory:
 ```bash
-cp .env.example .env
+npm run build && npm start
 ```
 
-| Variable | Description |
-| :--- | :--- |
-| `SNYK_TOKEN` | Your Snyk API Token ([get here](https://snyk.io/)) |
-| `GITHUB_TOKEN` | GitHub PAT with repo write access |
-| `GITHUB_ASSIGNEE` | Username to assign PRs to |
-
-### Running the Agent
-
+### 🚁 Mode 2: Remote Patrol (Power User)
+Scan and fix **any** external repository. The Sentinel will clone the repo into a workspace, perform the full security cycle, and submit PRs to that repo.
 ```bash
-# Build and run the full patrol cycle
-npm run build && npm start
+npm run build && npm start https://github.com/username/target-repo.git
 ```
 
 ---
 
 ## 📂 Project Structure
 
-```text
-the-sentinel/
-├── SENTINEL_CORE.md    # The security constitution
-├── SPEC/               # Task specifications for SDD
-├── src/
-│   ├── index.ts        # The Sentinel Orchestrator
-│   ├── agents/
-│   │   ├── watchman/   # Surveillance & Detection
-│   │   ├── engineer/   # Remediation & Testing
-│   │   └── diplomat/   # GitHub API & PR Handling
-│   └── core/           # System loaders & safe logic
-└── scan-results/       # Audit artifacts
-```
+- `SENTINEL_CORE.md`: The security constitution (Rules of Engagement).
+- `SPEC/`: Task specifications for the agent council.
+- `workspaces/`: Temporary area for remote repo patrolling (gitignored).
+- `scan-results/`: Centralized audit logs for all patrols.
 
 ---
 

@@ -6,7 +6,9 @@ export interface SentinelRules {
     directives: string[];
 }
 
-const RULES_FILE = path.resolve(process.cwd(), 'SENTINEL_CORE.md');
+// Ensure the rules are loaded from the Sentinel's home directory even if process.cwd() changes
+const SENTINEL_HOME = path.resolve(__dirname, '../../');
+const RULES_FILE = path.join(SENTINEL_HOME, 'SENTINEL_CORE.md');
 
 export function loadRules(): SentinelRules {
     if (!fs.existsSync(RULES_FILE)) {
@@ -16,7 +18,6 @@ export function loadRules(): SentinelRules {
     const content = fs.readFileSync(RULES_FILE, 'utf-8');
     console.log("🔒 Rules of Engagement Loaded.");
 
-    // Naive parsing for now, just split by lines and filter empty
     const directives = content.split('\n').filter(line => line.trim().length > 0);
 
     return { content, directives };

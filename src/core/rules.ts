@@ -16,7 +16,7 @@ export function loadRules(): SentinelRules {
     }
 
     const content = fs.readFileSync(RULES_FILE, 'utf-8');
-    console.log("🔒 Rules of Engagement Loaded.");
+    console.log("[INFO] Rules of Engagement Loaded.");
 
     const directives = content.split('\n').filter(line => line.trim().length > 0);
 

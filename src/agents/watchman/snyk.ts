@@ -50,7 +50,7 @@ export class SnykScanner {
         const { token, maxRetries = 3, retryDelayMs = 2000, timeoutMs = 300000 } = options;
 
         if (!process.env.SNYK_TOKEN && !token) {
-            console.warn("⚠️  SNYK_TOKEN not found. Scanner may fail or require CLI login.");
+            console.warn("[WARNING] SNYK_TOKEN not found. Scanner may fail or require CLI login.");
         }
 
         this.maxRetries = maxRetries;
@@ -80,7 +80,7 @@ export class SnykScanner {
             if (attempt < this.maxRetries && (isTimeout || isNetworkError)) {
                 const delay = this.retryDelayMs * Math.pow(2, attempt - 1);
                 console.warn(
-                    `⚠️  ${operationName} failed (attempt ${attempt}/${this.maxRetries}). ` +
+                    `[RETRY] ${operationName} failed (attempt ${attempt}/${this.maxRetries}). ` +
                     `Retrying in ${delay}ms... Reason: ${error.message}`
                 );
 
@@ -93,7 +93,7 @@ export class SnykScanner {
     }
 
     async test(): Promise<ScanResult> {
-        console.log("🔍 Running Snyk security scan...");
+        console.log("[INFO] Running Snyk security scan...");
         const startTime = Date.now();
         let retryCount = 0;
         const errors: string[] = [];
@@ -114,7 +114,7 @@ export class SnykScanner {
                 'Snyk CLI version check'
             );
         } catch (error: any) {
-            const errorMsg = "❌ Snyk CLI not found or not responding. Please install: npm install -g snyk";
+            const errorMsg = "[ERROR] Snyk CLI not found or not responding. Please install: npm install -g snyk";
             errors.push(errorMsg);
             throw new Error(errorMsg);
         }
@@ -122,7 +122,7 @@ export class SnykScanner {
         try {
             const result = await this.retryWithBackoff(
                 async () => {
-                    console.log(`🔄 Executing Snyk scan (timeout: ${this.timeoutMs / 1000}s)...`);
+                    console.log(`[INFO] Executing Snyk scan (timeout: ${this.timeoutMs / 1000}s)...`);
                     try {
                         const { stdout } = await execAsync('snyk test --json', {
                             maxBuffer: 10 * 1024 * 1024,
@@ -150,7 +150,7 @@ export class SnykScanner {
                 errors: errors.length > 0 ? errors : undefined
             };
 
-            console.log(`✅ Scan completed in ${(scanDuration / 1000).toFixed(2)}s`);
+            console.log(`[SUCCESS] Scan completed in ${(scanDuration / 1000).toFixed(2)}s`);
             return scanResult;
 
         } catch (error: any) {
@@ -168,7 +168,7 @@ export class SnykScanner {
     }
 
     private parseSnykOutput(jsonOutput: string): ScanResult {
-        console.log("📊 Parsing Snyk results...");
+        console.log("[INFO] Parsing Snyk results...");
         let data: any;
         try {
             data = JSON.parse(jsonOutput);
@@ -219,8 +219,8 @@ export class SnykScanner {
                 fs.renameSync(tempPath, filepath);
                 fs.writeFileSync(tempLatestPath, jsonContent, { encoding: 'utf8' });
                 fs.renameSync(tempLatestPath, latestPath);
-                console.log(`💾 Scan results saved to: ${filepath}`);
-                console.log(`💾 Latest results: ${latestPath}`);
+                console.log(`[INFO] Scan results saved to: ${filepath}`);
+                console.log(`[INFO] Latest results: ${latestPath}`);
             } catch (writeError) {
                 [tempPath, tempLatestPath].forEach(tmpFile => {
                     if (fs.existsSync(tmpFile)) try { fs.unlinkSync(tmpFile); } catch (e) { }
@@ -228,7 +228,7 @@ export class SnykScanner {
                 throw writeError;
             }
         } catch (error: any) {
-            console.error(`❌ Failed to save scan results: ${error.message}`);
+            console.error(`[ERROR] Failed to save scan results: ${error.message}`);
             throw error;
         }
     }
@@ -246,18 +246,18 @@ export class SnykScanner {
 
     printSummary(result: ScanResult): void {
         console.log("\n" + "=".repeat(60));
-        console.log("📋 SECURITY SCAN SUMMARY");
+        console.log("SECURITY SCAN SUMMARY");
         console.log("=".repeat(60));
         console.log(`Timestamp: ${result.timestamp}`);
         console.log(`Total Vulnerabilities: ${result.summary.total}`);
-        console.log(`  🔴 Critical: ${result.summary.critical}`);
-        console.log(`  🟠 High: ${result.summary.high}`);
-        console.log(`  🟡 Medium: ${result.summary.medium}`);
-        console.log(`  🟢 Low: ${result.summary.low}`);
+        console.log(`  Critical: ${result.summary.critical}`);
+        console.log(`  High: ${result.summary.high}`);
+        console.log(`  Medium: ${result.summary.medium}`);
+        console.log(`  Low: ${result.summary.low}`);
 
         const highPriority = this.filterHighPriority(result);
         if (highPriority.length > 0) {
-            console.log("\n⚠️  HIGH PRIORITY VULNERABILITIES:");
+            console.log("\n[WARNING] HIGH PRIORITY VULNERABILITIES:");
             highPriority.forEach((v, i) => {
                 console.log(`\n${i + 1}. [${v.severity.toUpperCase()}] ${v.title}`);
                 console.log(`   Package: ${v.packageName}@${v.version}`);

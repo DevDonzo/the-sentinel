@@ -12,7 +12,6 @@ export class GitManager {
             const { stdout, stderr } = await execAsync(command);
             if (stderr && !stderr.includes('Already on') && !stderr.includes('Switched to')) {
                 // Git messages often go to stderr even on success, so we just log them if needed
-                // console.warn(`Git warning: ${stderr}`);
             }
             return stdout.trim();
         } catch (error: any) {
@@ -41,16 +40,16 @@ export class GitManager {
         try {
             const currentBranch = await this.exec('git rev-parse --abbrev-ref HEAD');
             if (currentBranch === branchName) {
-                console.log(`🌿 Already on branch: ${branchName}`);
+                console.log(`[INFO] Already on branch: ${branchName}`);
                 return;
             }
 
             const exists = await this.branchExists(branchName);
             if (exists) {
-                console.log(`🌿 Switching to existing branch: ${branchName}`);
+                console.log(`[INFO] Switching to existing branch: ${branchName}`);
                 await this.exec(`git checkout ${branchName}`);
             } else {
-                console.log(`🌿 Creating new branch: ${branchName}`);
+                console.log(`[INFO] Creating new branch: ${branchName}`);
                 await this.exec(`git checkout -b ${branchName}`);
             }
         } catch (error) {
@@ -62,7 +61,7 @@ export class GitManager {
      * Stage all changes
      */
     async stageAll(): Promise<void> {
-        console.log('📦 Staging changes...');
+        console.log('[INFO] Staging changes...');
         await this.exec('git add .');
     }
 
@@ -70,7 +69,7 @@ export class GitManager {
      * Commit changes
      */
     async commit(message: string): Promise<void> {
-        console.log(`💾 Committing changes: "${message}"`);
+        console.log(`[INFO] Committing changes: "${message}"`);
         await this.exec(`git commit -m "${message}"`);
     }
 
@@ -79,7 +78,7 @@ export class GitManager {
      * USE WITH CAUTION
      */
     async revertChanges(): Promise<void> {
-        console.log('↩️ Reverting changes...');
+        console.log('[INFO] Reverting changes...');
         await this.exec('git checkout .');
         await this.exec('git clean -fd');
     }

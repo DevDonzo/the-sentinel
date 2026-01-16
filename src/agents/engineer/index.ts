@@ -53,7 +53,7 @@ export class EngineerAgent {
      * Read and parse the scan results JSON file
      */
     private async readScanResults(scanResultsPath: string): Promise<ScanResults> {
-        console.log(`📖 Engineer: Reading scan results from ${scanResultsPath}...`);
+        console.log(`[INFO] Engineer: Reading scan results from ${scanResultsPath}...`);
 
         const absolutePath = path.isAbsolute(scanResultsPath)
             ? scanResultsPath
@@ -82,7 +82,7 @@ export class EngineerAgent {
      * Run a shell command (for npm)
      */
     private async runCommand(command: string): Promise<void> {
-        console.log(`💻 Execute: ${command}`);
+        console.log(`[EXEC] Execute: ${command}`);
         try {
             await execAsync(command);
         } catch (error: any) {
@@ -94,12 +94,12 @@ export class EngineerAgent {
      * Analyze scan results and create diagnoses for vulnerabilities
      */
     async diagnose(scanResultsPath: string): Promise<Diagnosis[]> {
-        console.log("🔧 Engineer: Analyzing scan results...");
+        console.log("[INFO] Engineer: Analyzing scan results...");
 
         const scanResults = await this.readScanResults(scanResultsPath);
         const prioritized = this.prioritizeVulnerabilities(scanResults.vulnerabilities);
 
-        console.log(`📊 Found ${scanResults.summary.total} vulnerabilities`);
+        console.log(`[DATA] Found ${scanResults.summary.total} vulnerabilities`);
 
         const diagnoses: Diagnosis[] = prioritized.map(vuln => ({
             vulnerabilityId: vuln.id,
@@ -115,14 +115,14 @@ export class EngineerAgent {
      * Apply a fix for a specific vulnerability
      */
     async applyFix(diagnosis: Diagnosis): Promise<boolean> {
-        console.log(`\n🔧 Engineer: Applying fix for ${diagnosis.vulnerabilityId}...`);
+        console.log(`\n[PROCESS] Engineer: Applying fix for ${diagnosis.vulnerabilityId}...`);
 
         // Parsing the strings to get the package info
         // Format: "Update [package] from [old] to [new]"
         const match = diagnosis.suggestedFix.match(/Update\s+([^\s]+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/);
 
         if (!match) {
-            console.error("❌ Could not parse fix suggestion format.");
+            console.error("[ERROR] Could not parse fix suggestion format.");
             return false;
         }
 
@@ -144,25 +144,20 @@ export class EngineerAgent {
             let updated = false;
             // Check dependencies
             if (packageJson.dependencies && packageJson.dependencies[packageName]) {
-                console.log(`📝 Updating dependencies: ${packageName} ${packageJson.dependencies[packageName]} -> ${newVersion}`);
+                console.log(`[EDIT] Updating dependencies: ${packageName} ${packageJson.dependencies[packageName]} -> ${newVersion}`);
                 packageJson.dependencies[packageName] = newVersion;
                 updated = true;
             }
             // Check devDependencies
             if (packageJson.devDependencies && packageJson.devDependencies[packageName]) {
-                console.log(`📝 Updating devDependencies: ${packageName} ${packageJson.devDependencies[packageName]} -> ${newVersion}`);
+                console.log(`[EDIT] Updating devDependencies: ${packageName} ${packageJson.devDependencies[packageName]} -> ${newVersion}`);
                 packageJson.devDependencies[packageName] = newVersion;
                 updated = true;
             }
 
             if (!updated) {
-                console.warn(`⚠️ Package ${packageName} not found in dependencies. Trying to install directly...`);
-                // If not found, we might want to skip or try npm install directly. 
-                // For now, let's assume we modify the json if it existed, otherwise we fail.
-                // But wait, the vulnerability exists, so it MUST be there somewhere. 
-                // It could be a transitive dependency. Updating package.json only works for direct deps.
-                // For this task, we assume direct dependency patching.
-                console.error("❌ Failed to find direct dependency in package.json. This might be a transitive dependency.");
+                console.warn(`[WARNING] Package ${packageName} not found in dependencies. Trying to install directly...`);
+                console.error("[ERROR] Failed to find direct dependency in package.json. This might be a transitive dependency.");
                 return false;
             }
 
@@ -170,16 +165,16 @@ export class EngineerAgent {
             fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
             // 5. Update lockfile
-            console.log("📦 Running npm install to update lockfile...");
+            console.log("[INFO] Running npm install to update lockfile...");
             await this.runCommand('npm install');
 
             // 6. Verify
-            console.log("🧪 Running Verification (npm test)...");
+            console.log("[TEST] Running Verification (npm test)...");
             try {
                 await this.runCommand('npm test');
-                console.log("✅ Verification Passed!");
+                console.log("[SUCCESS] Verification Passed!");
             } catch (testError) {
-                console.error("❌ Verification Failed! Reverting changes...");
+                console.error("[ERROR] Verification Failed! Reverting changes...");
                 await this.git.revertChanges();
                 return false;
             }
@@ -188,42 +183,39 @@ export class EngineerAgent {
             await this.git.stageAll();
             await this.git.commit(`fix(${packageName}): resolve ${diagnosis.vulnerabilityId}`);
 
-            console.log(`\n✅ Fix applied successfully on branch ${branchName}`);
+            console.log(`\n[SUCCESS] Fix applied successfully on branch ${branchName}`);
             return true;
 
         } catch (error) {
-            console.error("❌ Failed to apply fix:", error);
-            // Ensure we try to cleanup if we are in a dirty state? 
-            // git.revertChanges() call is inside the test catch block.
-            // If other errors happen, we might want to revert too.
+            console.error("[ERROR] Failed to apply fix:", error);
             return false;
         }
     }
 
     async run(scanResultsPath: string): Promise<void> {
-        console.log("🚀 Engineer Agent Starting...\n");
+        console.log("[SYSTEM] Engineer Agent Starting...\n");
 
         try {
             const diagnoses = await this.diagnose(scanResultsPath);
 
             if (diagnoses.length === 0) {
-                console.log("✨ No vulnerabilities found.");
+                console.log("[INFO] No vulnerabilities found.");
                 return;
             }
 
             const criticalDiagnosis = diagnoses[0];
-            console.log(`\n🎯 Targeting highest priority vulnerability: ${criticalDiagnosis.vulnerabilityId}`);
+            console.log(`\n[TARGET] Targeting highest priority vulnerability: ${criticalDiagnosis.vulnerabilityId}`);
 
             const success = await this.applyFix(criticalDiagnosis);
 
             if (success) {
-                console.log("\n🎉 Engineer Agent completed successfully!");
+                console.log("\n[SUCCESS] Engineer Agent completed successfully!");
             } else {
-                console.error("\n⚠️ Engineer Agent failed to fix the issue.");
+                console.error("\n[WARNING] Engineer Agent failed to fix the issue.");
             }
 
         } catch (error) {
-            console.error("❌ Engineer Agent encountered an error:", error);
+            console.error("[ERROR] Engineer Agent encountered an error:", error);
             throw error;
         }
     }

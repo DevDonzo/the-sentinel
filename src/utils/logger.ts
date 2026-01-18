@@ -111,15 +111,12 @@ class Logger {
 
     // Special formatting for headers
     header(message: string) {
-        console.log('\n' + chalk.bold.cyan('═'.repeat(60)));
-        console.log(chalk.bold.cyan(message));
-        console.log(chalk.bold.cyan('═'.repeat(60)) + '\n');
+        console.log('\n' + chalk.bold.cyan(message));
+        console.log(chalk.cyan('─'.repeat(message.length)) + '\n');
     }
 
     section(message: string) {
-        console.log('\n' + chalk.bold.white('─'.repeat(60)));
-        console.log(chalk.bold.white(message));
-        console.log(chalk.bold.white('─'.repeat(60)));
+        console.log('\n' + chalk.bold.white('• ' + message));
     }
 }
 

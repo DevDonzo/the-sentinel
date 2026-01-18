@@ -2,6 +2,14 @@
 
 ## 🚀 Installation
 
+## 🛠️ Prerequisites
+
+- **Git**: Installed and authenticated (`git version`).
+- **Snyk CLI**: Installed (`npm install -g snyk`) and authenticated (`snyk auth`).
+- **Node.js**: v18 or higher.
+
+## 🚀 Installation
+
 ```bash
 # Global (recommended)
 npm install -g the-warden

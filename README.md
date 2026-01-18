@@ -35,6 +35,13 @@ The communicator. Once a fix is verified, The Diplomat crafts a professional, se
 - **Safeguarded Operations**: Operates under a strict "Rules of Engagement" constitution preventing unauthorized merges
 - **Remote Patrol**: Supports patrolling any public or private GitHub repository
 
+## Prerequisites
+
+Warden relies on a few external tools to perform its duties effectively:
+
+- **[Git](https://git-scm.com/)**: Required for creating fix branches and managing repositories. Ensure it is installed and authenticated.
+- **[Snyk CLI](https://support.snyk.io/hc/en-us/articles/360003812538-Install-the-Snyk-CLI)**: (Optional but recommended) Required if using Snyk as your primary scanner. Warden will fallback to `npm audit` if Snyk is not available.
+
 ---
 
 ## Installation

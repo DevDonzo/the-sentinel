@@ -4,7 +4,7 @@
   "description": "Autonomous SRE & Security Orchestration Agent - Automatically scan, fix, and patch security vulnerabilities in your repositories",
   "main": "dist/index.js",
   "bin": {
-    "sentinel": "./dist/index.js"
+    "sentinel": "dist/index.js"
   },
   "files": [
     "dist/",

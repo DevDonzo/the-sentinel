@@ -1,16 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export interface SentinelRules {
+export interface WardenRules {
     content: string;
     directives: string[];
 }
 
-// Ensure the rules are loaded from the Sentinel's home directory even if process.cwd() changes
-const SENTINEL_HOME = path.resolve(__dirname, '../../');
-const RULES_FILE = path.join(SENTINEL_HOME, 'SENTINEL_CORE.md');
+// Ensure the rules are loaded from the Warden's home directory even if process.cwd() changes
+const WARDEN_HOME = path.resolve(__dirname, '../../');
+const RULES_FILE = path.join(WARDEN_HOME, 'WARDEN_CORE.md');
 
-export function loadRules(): SentinelRules {
+export function loadRules(): WardenRules {
     if (!fs.existsSync(RULES_FILE)) {
         throw new Error(`CRITICAL: Rules of Engagement file not found at ${RULES_FILE}`);
     }

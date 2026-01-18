@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to The Sentinel will be documented in this file.
+All notable changes to Warden will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -9,16 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🎉 Initial Production Release
 
-This is the first production-ready release of The Sentinel with comprehensive improvements for real-world usage.
+This is the first production-ready release of Warden with comprehensive improvements for real-world usage.
 
 ### ✨ Added
 
 #### CLI & User Experience
 - **Professional CLI Interface** using Commander.js
-  - `sentinel scan` - Main scanning command with multiple options
-  - `sentinel validate` - Pre-flight validation checks
-  - `sentinel setup` - Interactive setup wizard
-  - `sentinel init` - Initialize Sentinel in a repository
+  - `warden scan` - Main scanning command with multiple options
+  - `warden validate` - Pre-flight validation checks
+  - `warden setup` - Interactive setup wizard
+  - `warden init` - Initialize Warden in a repository
 - **Comprehensive Logging System**
   - Color-coded console output using Chalk
   - File-based logging with Winston (error.log and combined.log)
@@ -38,7 +38,7 @@ This is the first production-ready release of The Sentinel with comprehensive im
 
 #### Configuration & Setup
 - **Interactive Setup Wizard** for first-time configuration
-- **Repository Initialization** command to set up Sentinel in any project
+- **Repository Initialization** command to set up Warden in any project
 - **Flexible Configuration Options**
   - CLI flags override defaults
   - Support for multiple severity levels
@@ -89,7 +89,7 @@ This is the first production-ready release of The Sentinel with comprehensive im
 
 ### 🏗️ Architecture
 
-The Sentinel now follows a clean architecture with:
+The Warden now follows a clean architecture with:
 - **CLI Layer** - User interface and command handling
 - **Orchestration Layer** - Main workflow coordination
 - **Agent Layer** - Specialized agents (Watchman, Engineer, Diplomat)
@@ -99,10 +99,10 @@ The Sentinel now follows a clean architecture with:
 ### 📋 Commands
 
 ```bash
-sentinel scan [repository] [options]  # Scan for vulnerabilities
-sentinel validate                     # Validate environment
-sentinel setup                        # Interactive setup
-sentinel init                         # Initialize in repo
+warden scan [repository] [options]  # Scan for vulnerabilities
+warden validate                     # Validate environment
+warden setup                        # Interactive setup
+warden init                         # Initialize in repo
 ```
 
 ### 🎯 Options
@@ -141,5 +141,5 @@ sentinel init                         # Initialize in repo
 
 ---
 
-[1.0.0]: https://github.com/DevDonzo/the-sentinel/releases/tag/v1.0.0
-[0.1.0]: https://github.com/DevDonzo/the-sentinel/releases/tag/v0.1.0
+[1.0.0]: https://github.com/DevDonzo/warden/releases/tag/v1.0.0
+[0.1.0]: https://github.com/DevDonzo/warden/releases/tag/v0.1.0

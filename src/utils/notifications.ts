@@ -1,5 +1,5 @@
 import { logger } from './logger';
-import { SentinelConfig } from './config';
+import { WardenConfig } from './config';
 
 export interface NotificationPayload {
     title: string;
@@ -14,9 +14,9 @@ export interface NotificationPayload {
 }
 
 export class NotificationService {
-    private config: SentinelConfig['notifications'];
+    private config: WardenConfig['notifications'];
 
-    constructor(config: SentinelConfig['notifications']) {
+    constructor(config: WardenConfig['notifications']) {
         this.config = config;
     }
 
@@ -64,7 +64,7 @@ export class NotificationService {
 
         const slackPayload = {
             channel: this.config.slack.channel,
-            username: 'The Sentinel',
+            username: 'Warden',
             icon_emoji: ':shield:',
             attachments: [
                 {
@@ -72,7 +72,7 @@ export class NotificationService {
                     title: `${emoji} ${payload.title}`,
                     text: payload.message,
                     fields: this.buildFields(payload.details),
-                    footer: 'The Sentinel Security Bot',
+                    footer: 'Warden Security Bot',
                     footer_icon: 'https://github.com/DevDonzo.png',
                     ts: Math.floor(Date.now() / 1000)
                 }
@@ -109,7 +109,7 @@ export class NotificationService {
         const emoji = this.getSeverityEmoji(payload.severity);
 
         const discordPayload = {
-            username: 'The Sentinel',
+            username: 'Warden',
             avatar_url: 'https://github.com/DevDonzo.png',
             embeds: [
                 {
@@ -118,7 +118,7 @@ export class NotificationService {
                     color,
                     fields: this.buildFields(payload.details),
                     footer: {
-                        text: 'The Sentinel Security Bot'
+                        text: 'Warden Security Bot'
                     },
                     timestamp: new Date().toISOString()
                 }
@@ -245,7 +245,7 @@ export class NotificationService {
     async notifyScanStarted(repository: string): Promise<void> {
         await this.send({
             title: 'Security Scan Started',
-            message: `The Sentinel has started scanning for vulnerabilities`,
+            message: `Warden has started scanning for vulnerabilities`,
             severity: 'info',
             details: { repository }
         });
@@ -274,7 +274,7 @@ export class NotificationService {
     async notifyFixApplied(repository: string, fixed: number, prUrl: string): Promise<void> {
         await this.send({
             title: 'Security Fix Applied',
-            message: `The Sentinel has automatically fixed ${fixed} vulnerability(ies)`,
+            message: `Warden has automatically fixed ${fixed} vulnerability(ies)`,
             severity: 'success',
             details: { repository, fixed, prUrl }
         });
@@ -293,6 +293,6 @@ export class NotificationService {
     }
 }
 
-export function createNotificationService(config: SentinelConfig['notifications']): NotificationService {
+export function createNotificationService(config: WardenConfig['notifications']): NotificationService {
     return new NotificationService(config);
 }

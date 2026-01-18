@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
 
-export interface SentinelConfig {
+export interface WardenConfig {
     // Scanner settings
     scanner: {
         primary: 'snyk' | 'npm-audit' | 'all';
@@ -58,7 +58,7 @@ export interface SentinelConfig {
     };
 }
 
-const DEFAULT_CONFIG: SentinelConfig = {
+const DEFAULT_CONFIG: WardenConfig = {
     scanner: {
         primary: 'snyk',
         fallback: true,
@@ -93,7 +93,7 @@ const DEFAULT_CONFIG: SentinelConfig = {
 };
 
 export class ConfigManager {
-    private config: SentinelConfig;
+    private config: WardenConfig;
     private configPath: string;
 
     constructor(customPath?: string) {
@@ -126,7 +126,7 @@ export class ConfigManager {
     /**
      * Load configuration from file or use defaults
      */
-    private loadConfig(): SentinelConfig {
+    private loadConfig(): WardenConfig {
         if (!this.configPath || !fs.existsSync(this.configPath)) {
             return { ...DEFAULT_CONFIG };
         }
@@ -177,21 +177,21 @@ export class ConfigManager {
     /**
      * Get current configuration
      */
-    getConfig(): SentinelConfig {
+    getConfig(): WardenConfig {
         return { ...this.config };
     }
 
     /**
      * Get specific config value
      */
-    get<K extends keyof SentinelConfig>(key: K): SentinelConfig[K] {
+    get<K extends keyof WardenConfig>(key: K): WardenConfig[K] {
         return this.config[key];
     }
 
     /**
      * Update configuration
      */
-    set<K extends keyof SentinelConfig>(key: K, value: SentinelConfig[K]): void {
+    set<K extends keyof WardenConfig>(key: K, value: WardenConfig[K]): void {
         this.config[key] = value;
     }
 

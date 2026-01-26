@@ -49,4 +49,21 @@ describe('Logger', () => {
         logger.debug('Test debug message');
         expect(consoleLogSpy).not.toHaveBeenCalled();
     });
+
+    it('should log timing information', () => {
+        logger.timing('Operation', 2500);
+        expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should format timing correctly for seconds', () => {
+        consoleLogSpy.mockClear();
+        logger.timing('Test', 3500);
+        expect(consoleLogSpy).toHaveBeenCalled();
+    });
+
+    it('should format timing correctly for minutes', () => {
+        consoleLogSpy.mockClear();
+        logger.timing('LongOp', 65000);
+        expect(consoleLogSpy).toHaveBeenCalled();
+    });
 });

@@ -117,10 +117,10 @@ Thank you for your interest in contributing to Warden! This document provides gu
 npm test
 
 # Run tests in watch mode
-npm test -- --watch
+npm run test:watch
 
-# Run tests with coverage
-npm test -- --coverage
+# Run tests with coverage report
+npm run test:coverage
 ```
 
 ## 📚 Documentation
@@ -152,10 +152,30 @@ the-warden/
 ## 🎨 Code Style
 
 - Use TypeScript strict mode
-- Follow existing formatting
+- Follow existing formatting (enforced by Prettier and EditorConfig)
 - Use meaningful variable names
 - Keep functions small and focused
 - Avoid deep nesting
+
+### Development Scripts
+
+```bash
+# Build the project
+npm run build
+
+# Run in development mode (hot reload)
+npm run dev
+
+# Clean build artifacts and logs
+npm run clean
+
+# Run specific agent (watchman example)
+npm run watchman
+
+# Run CLI commands
+npm run cli validate
+npm run cli setup
+```
 
 ## 🐛 Reporting Bugs
 

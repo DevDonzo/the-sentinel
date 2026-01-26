@@ -3,6 +3,7 @@ import * as path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { GitManager } from './git';
+import { logger } from '../../utils/logger';
 
 const execAsync = promisify(exec);
 
@@ -36,14 +37,15 @@ interface ScanResults {
     };
 }
 
+const SEVERITY_PRIORITY: Record<string, number> = {
+    'critical': 4,
+    'high': 3,
+    'medium': 2,
+    'low': 1
+};
+
 export class EngineerAgent {
     private git: GitManager;
-    private severityPriority: Record<string, number> = {
-        'critical': 4,
-        'high': 3,
-        'medium': 2,
-        'low': 1
-    };
 
     constructor() {
         this.git = new GitManager();
@@ -53,7 +55,7 @@ export class EngineerAgent {
      * Read and parse the scan results JSON file
      */
     private async readScanResults(scanResultsPath: string): Promise<ScanResults> {
-        console.log(`[INFO] Engineer: Reading scan results from ${scanResultsPath}...`);
+        logger.engineer(`Reading scan results from ${scanResultsPath}...`);
 
         const absolutePath = path.isAbsolute(scanResultsPath)
             ? scanResultsPath
@@ -72,7 +74,7 @@ export class EngineerAgent {
      */
     private prioritizeVulnerabilities(vulnerabilities: Vulnerability[]): Vulnerability[] {
         return [...vulnerabilities].sort((a, b) => {
-            const priorityDiff = this.severityPriority[b.severity] - this.severityPriority[a.severity];
+            const priorityDiff = SEVERITY_PRIORITY[b.severity] - SEVERITY_PRIORITY[a.severity];
             if (priorityDiff !== 0) return priorityDiff;
             return b.cvssScore - a.cvssScore;
         });

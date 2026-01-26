@@ -3,18 +3,24 @@
 import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 import { logger } from './utils/logger';
 import { validator } from './utils/validator';
 
 // Load environment variables
 dotenv.config();
 
+// Read version from package.json
+const packageJsonPath = path.resolve(__dirname, '../package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+const version = packageJson.version;
+
 const program = new Command();
 
 program
     .name('warden')
     .description('Warden - Autonomous SRE & Security Orchestration Agent')
-    .version('1.0.0');
+    .version(version);
 
 program
     .command('scan')

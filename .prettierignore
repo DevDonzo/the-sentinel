@@ -1,0 +1,29 @@
+# Ignore build artifacts
+dist/
+build/
+node_modules/
+
+# Ignore generated files
+coverage/
+*.log
+logs/
+
+# Ignore configuration and lockfiles
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Ignore IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+.env
+.env.example
+
+# Ignore git files
+.git/
+.gitignore
+
+# Ignore documentation generated files
+SPEC/
+website/

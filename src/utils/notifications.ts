@@ -1,10 +1,12 @@
 import { logger } from './logger';
 import { WardenConfig } from './config';
 
+export type NotificationSeverity = 'info' | 'warning' | 'error' | 'success';
+
 export interface NotificationPayload {
     title: string;
     message: string;
-    severity: 'info' | 'warning' | 'error' | 'success';
+    severity: NotificationSeverity;
     details?: {
         repository?: string;
         vulnerabilities?: number;
@@ -12,6 +14,27 @@ export interface NotificationPayload {
         prUrl?: string;
     };
 }
+
+const SEVERITY_COLORS_HEX: Record<NotificationSeverity, string> = {
+    info: '#3b82f6',
+    warning: '#f59e0b',
+    error: '#ef4444',
+    success: '#10b981'
+};
+
+const SEVERITY_COLORS_INT: Record<NotificationSeverity, number> = {
+    info: 0x3b82f6,
+    warning: 0xf59e0b,
+    error: 0xef4444,
+    success: 0x10b981
+};
+
+const SEVERITY_EMOJIS: Record<NotificationSeverity, string> = {
+    info: 'ℹ️',
+    warning: '⚠️',
+    error: '❌',
+    success: '✅'
+};
 
 export class NotificationService {
     private config: WardenConfig['notifications'];
@@ -203,40 +226,22 @@ export class NotificationService {
     /**
      * Get color for severity (hex)
      */
-    private getSeverityColor(severity: string): string {
-        const colors: Record<string, string> = {
-            info: '#3b82f6',
-            warning: '#f59e0b',
-            error: '#ef4444',
-            success: '#10b981'
-        };
-        return colors[severity] || colors.info;
+    private getSeverityColor(severity: NotificationSeverity): string {
+        return SEVERITY_COLORS_HEX[severity] || SEVERITY_COLORS_HEX.info;
     }
 
     /**
      * Get color for severity (integer for Discord)
      */
-    private getSeverityColorInt(severity: string): number {
-        const colors: Record<string, number> = {
-            info: 0x3b82f6,
-            warning: 0xf59e0b,
-            error: 0xef4444,
-            success: 0x10b981
-        };
-        return colors[severity] || colors.info;
+    private getSeverityColorInt(severity: NotificationSeverity): number {
+        return SEVERITY_COLORS_INT[severity] || SEVERITY_COLORS_INT.info;
     }
 
     /**
      * Get emoji for severity
      */
-    private getSeverityEmoji(severity: string): string {
-        const emojis: Record<string, string> = {
-            info: 'ℹ️',
-            warning: '⚠️',
-            error: '❌',
-            success: '✅'
-        };
-        return emojis[severity] || emojis.info;
+    private getSeverityEmoji(severity: NotificationSeverity): string {
+        return SEVERITY_EMOJIS[severity] || SEVERITY_EMOJIS.info;
     }
 
     /**

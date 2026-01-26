@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { logger } from '../utils/logger';
 
 export interface WardenRules {
     content: string;
@@ -10,13 +11,16 @@ export interface WardenRules {
 const WARDEN_HOME = path.resolve(__dirname, '../../');
 const RULES_FILE = path.join(WARDEN_HOME, 'WARDEN_CORE.md');
 
+/**
+ * Load and parse Warden's Rules of Engagement
+ */
 export function loadRules(): WardenRules {
     if (!fs.existsSync(RULES_FILE)) {
         throw new Error(`CRITICAL: Rules of Engagement file not found at ${RULES_FILE}`);
     }
 
     const content = fs.readFileSync(RULES_FILE, 'utf-8');
-    console.log("[INFO] Rules of Engagement Loaded.");
+    logger.info('Rules of Engagement Loaded.');
 
     const directives = content.split('\n').filter(line => line.trim().length > 0);
 

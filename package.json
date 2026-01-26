@@ -24,6 +24,8 @@
     "cli": "ts-node src/cli.ts",
     "validate": "ts-node src/cli.ts validate",
     "setup": "ts-node src/cli.ts setup",
+    "format": "prettier --write \"src/**/*.ts\" \"__tests__/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"__tests__/**/*.ts\"",
     "clean": "rm -rf dist coverage logs *.log",
     "prepublishOnly": "npm run build && npm test"
   },

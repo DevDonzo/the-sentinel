@@ -47,13 +47,12 @@ export function generateMockScanResult(): ScanResult {
         }
     ];
 
-    const summary = {
-        total: vulnerabilities.length,
-        critical: vulnerabilities.filter(v => v.severity === 'critical').length,
-        high: vulnerabilities.filter(v => v.severity === 'high').length,
-        medium: vulnerabilities.filter(v => v.severity === 'medium').length,
-        low: vulnerabilities.filter(v => v.severity === 'low').length
-    };
+    // Count vulnerabilities by severity in single pass
+    const summary = vulnerabilities.reduce((acc, v) => ({
+        ...acc,
+        [v.severity]: (acc[v.severity as keyof typeof acc] || 0) + 1,
+        total: acc.total + 1
+    }), { critical: 0, high: 0, medium: 0, low: 0, total: 0 });
 
     return {
         timestamp: new Date().toISOString(),

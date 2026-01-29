@@ -175,5 +175,59 @@ program
         }
     });
 
+program
+    .command('status')
+    .description('Show Warden status and recent scan history')
+    .action(async () => {
+        logger.header('📊 Warden Status');
+        
+        // Check for scan results
+        const fs = await import('fs');
+        const path = await import('path');
+        const scanResultsPath = path.join(process.cwd(), 'scan-results');
+        
+        if (fs.existsSync(scanResultsPath)) {
+            const files = fs.readdirSync(scanResultsPath)
+                .filter(f => f.endsWith('.json'))
+                .sort()
+                .reverse()
+                .slice(0, 5);
+            
+            if (files.length > 0) {
+                logger.section('Recent Scans');
+                for (const file of files) {
+                    try {
+                        const data = JSON.parse(
+                            fs.readFileSync(path.join(scanResultsPath, file), 'utf-8')
+                        );
+                        const date = new Date(data.timestamp || file).toLocaleDateString();
+                        const vulns = data.summary?.total ?? data.vulnerabilities?.length ?? 0;
+                        logger.info(`  ${file}: ${vulns} vulnerabilities (${date})`);
+                    } catch {
+                        logger.info(`  ${file}: Unable to parse`);
+                    }
+                }
+            } else {
+                logger.info('No scan history found.');
+            }
+        } else {
+            logger.info('No scan results directory found. Run "warden scan" first.');
+        }
+        
+        // Check configuration
+        logger.section('Configuration');
+        const configPath = path.join(process.cwd(), '.wardenrc.json');
+        if (fs.existsSync(configPath)) {
+            logger.success('  .wardenrc.json found');
+        } else {
+            logger.warn('  No .wardenrc.json (using defaults)');
+        }
+        
+        // Check environment
+        logger.section('Environment');
+        logger.info(`  GITHUB_TOKEN: ${process.env.GITHUB_TOKEN ? '✓ Set' : '✗ Not set'}`);
+        logger.info(`  SNYK_TOKEN: ${process.env.SNYK_TOKEN ? '✓ Set' : '✗ Not set'}`);
+    });
+
 // Parse arguments
 program.parse();

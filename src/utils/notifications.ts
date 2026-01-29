@@ -169,7 +169,7 @@ export class NotificationService {
     /**
      * Send email notification (placeholder - requires email service)
      */
-    private async sendEmail(payload: NotificationPayload): Promise<void> {
+    private async sendEmail(_payload: NotificationPayload): Promise<void> {
         if (!this.config.email) {
             return;
         }

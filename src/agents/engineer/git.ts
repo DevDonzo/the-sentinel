@@ -79,7 +79,7 @@ export class GitManager {
      * USE WITH CAUTION
      */
     async revertChanges(): Promise<void> {
-        console.log('[INFO] Reverting changes...');
+        logger.info('Reverting changes...');
         await this.exec('git checkout .');
         await this.exec('git clean -fd');
     }

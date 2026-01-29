@@ -132,7 +132,7 @@ export class ProgressReporter {
         let failedCount = 0;
         let skippedCount = 0;
 
-        this.steps.forEach((step, id) => {
+        this.steps.forEach((step) => {
             const icon = this.getStatusIcon(step.status);
             const color = this.getStatusColor(step.status);
             const duration = step.duration ? ` (${this.formatDuration(step.duration)})` : '';

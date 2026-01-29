@@ -84,7 +84,7 @@ export class EngineerAgent {
      * Run a shell command (for npm)
      */
     private async runCommand(command: string): Promise<void> {
-        console.log(`[EXEC] Execute: ${command}`);
+        logger.debug(`Executing: ${command}`);
         try {
             await execAsync(command);
         } catch (error: any) {
@@ -96,12 +96,12 @@ export class EngineerAgent {
      * Analyze scan results and create diagnoses for vulnerabilities
      */
     async diagnose(scanResultsPath: string): Promise<Diagnosis[]> {
-        console.log("[INFO] Engineer: Analyzing scan results...");
+        logger.engineer('Analyzing scan results...');
 
         const scanResults = await this.readScanResults(scanResultsPath);
         const prioritized = this.prioritizeVulnerabilities(scanResults.vulnerabilities);
 
-        console.log(`[DATA] Found ${scanResults.summary.total} vulnerabilities`);
+        logger.info(`Found ${scanResults.summary.total} vulnerabilities`);
 
         const diagnoses: Diagnosis[] = prioritized.map(vuln => ({
             vulnerabilityId: vuln.id,
@@ -117,14 +117,14 @@ export class EngineerAgent {
      * Apply a fix for a specific vulnerability
      */
     async applyFix(diagnosis: Diagnosis): Promise<boolean> {
-        console.log(`\n[PROCESS] Engineer: Applying fix for ${diagnosis.vulnerabilityId}...`);
+        logger.engineer(`Applying fix for ${diagnosis.vulnerabilityId}...`);
 
         // Parsing the strings to get the package info
         // Format: "Update [package] from [old] to [new]"
         const match = diagnosis.suggestedFix.match(/Update\s+([^\s]+)\s+from\s+([^\s]+)\s+to\s+([^\s]+)/);
 
         if (!match) {
-            console.error("[ERROR] Could not parse fix suggestion format.");
+            logger.error('Could not parse fix suggestion format.');
             return false;
         }
 
@@ -146,20 +146,20 @@ export class EngineerAgent {
             let updated = false;
             // Check dependencies
             if (packageJson.dependencies && packageJson.dependencies[packageName]) {
-                console.log(`[EDIT] Updating dependencies: ${packageName} ${packageJson.dependencies[packageName]} -> ${newVersion}`);
+                logger.info(`Updating dependencies: ${packageName} ${packageJson.dependencies[packageName]} -> ${newVersion}`);
                 packageJson.dependencies[packageName] = newVersion;
                 updated = true;
             }
             // Check devDependencies
             if (packageJson.devDependencies && packageJson.devDependencies[packageName]) {
-                console.log(`[EDIT] Updating devDependencies: ${packageName} ${packageJson.devDependencies[packageName]} -> ${newVersion}`);
+                logger.info(`Updating devDependencies: ${packageName} ${packageJson.devDependencies[packageName]} -> ${newVersion}`);
                 packageJson.devDependencies[packageName] = newVersion;
                 updated = true;
             }
 
             if (!updated) {
-                console.warn(`[WARNING] Package ${packageName} not found in dependencies. Trying to install directly...`);
-                console.error("[ERROR] Failed to find direct dependency in package.json. This might be a transitive dependency.");
+                logger.warn(`Package ${packageName} not found in dependencies. Trying to install directly...`);
+                logger.error('Failed to find direct dependency in package.json. This might be a transitive dependency.');
                 return false;
             }
 
@@ -167,16 +167,16 @@ export class EngineerAgent {
             fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
             // 5. Update lockfile
-            console.log("[INFO] Running npm install to update lockfile...");
+            logger.engineer('Running npm install to update lockfile...');
             await this.runCommand('npm install');
 
             // 6. Verify
-            console.log("[TEST] Running Verification (npm test)...");
+            logger.engineer('Running Verification (npm test)...');
             try {
                 await this.runCommand('npm test');
-                console.log("[SUCCESS] Verification Passed!");
-            } catch (testError) {
-                console.error("[ERROR] Verification Failed! Reverting changes...");
+                logger.success('Verification Passed!');
+            } catch {
+                logger.error('Verification Failed! Reverting changes...');
                 await this.git.revertChanges();
                 return false;
             }
@@ -185,39 +185,39 @@ export class EngineerAgent {
             await this.git.stageAll();
             await this.git.commit(`fix(${packageName}): resolve ${diagnosis.vulnerabilityId}`);
 
-            console.log(`\n[SUCCESS] Fix applied successfully on branch ${branchName}`);
+            logger.success(`Fix applied successfully on branch ${branchName}`);
             return true;
 
         } catch (error) {
-            console.error("[ERROR] Failed to apply fix:", error);
+            logger.error('Failed to apply fix:', error as Error);
             return false;
         }
     }
 
     async run(scanResultsPath: string): Promise<void> {
-        console.log("[SYSTEM] Engineer Agent Starting...\n");
+        logger.engineer('Engineer Agent Starting...');
 
         try {
             const diagnoses = await this.diagnose(scanResultsPath);
 
             if (diagnoses.length === 0) {
-                console.log("[INFO] No vulnerabilities found.");
+                logger.info('No vulnerabilities found.');
                 return;
             }
 
             const criticalDiagnosis = diagnoses[0];
-            console.log(`\n[TARGET] Targeting highest priority vulnerability: ${criticalDiagnosis.vulnerabilityId}`);
+            logger.info(`Targeting highest priority vulnerability: ${criticalDiagnosis.vulnerabilityId}`);
 
             const success = await this.applyFix(criticalDiagnosis);
 
             if (success) {
-                console.log("\n[SUCCESS] Engineer Agent completed successfully!");
+                logger.success('Engineer Agent completed successfully!');
             } else {
-                console.error("\n[WARNING] Engineer Agent failed to fix the issue.");
+                logger.warn('Engineer Agent failed to fix the issue.');
             }
 
         } catch (error) {
-            console.error("[ERROR] Engineer Agent encountered an error:", error);
+            logger.error('Engineer Agent encountered an error:', error as Error);
             throw error;
         }
     }

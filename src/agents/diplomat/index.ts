@@ -1,4 +1,5 @@
 import { Octokit } from '@octokit/rest';
+import { logger } from '../../utils/logger';
 
 export interface PrConfig {
     branch: string;
@@ -18,17 +19,17 @@ export class DiplomatAgent {
     }
 
     async createPullRequest(config: PrConfig): Promise<string> {
-        console.log(`[INFO] Diplomat: Preparing to open PR for ${config.branch}`);
+        logger.diplomat(`Preparing to open PR for ${config.branch}`);
 
         if (!this.octokit) {
-            throw new Error("[ERROR] Diplomat: No GITHUB_TOKEN found. Real API Integration requires a token.");
+            throw new Error("Diplomat: No GITHUB_TOKEN found. Real API Integration requires a token.");
         }
 
         try {
             // Extract owner and repo from git remote
             const { owner, repo } = await this.getRepoInfo();
 
-            console.log(`[INFO] Diplomat: Opening PR on ${owner}/${repo}...`);
+            logger.diplomat(`Opening PR on ${owner}/${repo}...`);
 
             // Create the pull request using Octokit
             const response = await this.octokit.pulls.create({
@@ -40,9 +41,8 @@ export class DiplomatAgent {
                 base: 'main', // Default base branch
             });
 
-            console.log(`[SUCCESS] Diplomat: PR created successfully!`);
-            console.log(`   URL: ${response.data.html_url}`);
-            console.log(`   Number: #${response.data.number}`);
+            logger.success(`PR created successfully! URL: ${response.data.html_url}`);
+            logger.info(`PR Number: #${response.data.number}`);
 
             // 1. Smart Labelling
             const labels = ['security', 'automated'];
@@ -59,15 +59,15 @@ export class DiplomatAgent {
 
             return response.data.html_url;
         } catch (error: any) {
-            console.error(`[ERROR] Diplomat: Failed to create PR: ${error.message}`);
+            logger.error(`Diplomat: Failed to create PR: ${error.message}`);
 
             // Provide helpful error messages
             if (error.status === 422) {
-                console.error(`[HINT] Branch '${config.branch}' may not exist on remote, or a PR already exists.`);
+                logger.warn(`Branch '${config.branch}' may not exist on remote, or a PR already exists.`);
             } else if (error.status === 401) {
-                console.error(`[HINT] GITHUB_TOKEN may be invalid or expired.`);
+                logger.warn(`GITHUB_TOKEN may be invalid or expired.`);
             } else if (error.status === 404) {
-                console.error(`[HINT] Repository not found. Check git remote configuration.`);
+                logger.warn(`Repository not found. Check git remote configuration.`);
             }
 
             throw error;
@@ -87,7 +87,7 @@ export class DiplomatAgent {
             }).trim();
 
             // Parse GitHub URL (supports both HTTPS and SSH formats)
-            let match = remoteUrl.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?$/);
+            const match = remoteUrl.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?$/);
 
             if (!match) {
                 throw new Error(`Could not parse GitHub URL: ${remoteUrl}`);
@@ -98,8 +98,8 @@ export class DiplomatAgent {
 
             return { owner, repo };
         } catch (error: any) {
-            console.error(`[ERROR] Failed to get repository info: ${error.message}`);
-            console.log(`[INFO] Falling back to environment variables...`);
+            logger.error(`Failed to get repository info: ${error.message}`);
+            logger.info(`Falling back to environment variables...`);
 
             // Fallback to environment variables if available
             const owner = process.env.GITHUB_OWNER || 'unknown-owner';
@@ -127,9 +127,9 @@ export class DiplomatAgent {
                 issue_number: issueNumber,
                 labels,
             });
-            console.log(`[INFO] Diplomat: Added labels: ${labels.join(', ')}`);
+            logger.diplomat(`Added labels: ${labels.join(', ')}`);
         } catch (error: any) {
-            console.warn(`[WARNING] Diplomat: Failed to add labels: ${error.message}`);
+            logger.warn(`Diplomat: Failed to add labels: ${error.message}`);
             // Don't throw - labels are nice-to-have
         }
     }
@@ -150,9 +150,9 @@ export class DiplomatAgent {
                 issue_number: issueNumber,
                 assignees: [assignee]
             });
-            console.log(`[INFO] Diplomat: Assigned PR to ${assignee}`);
+            logger.diplomat(`Assigned PR to ${assignee}`);
         } catch (error: any) {
-            console.warn(`[WARNING] Diplomat: Failed to assign PR: ${error.message}`);
+            logger.warn(`Diplomat: Failed to assign PR: ${error.message}`);
         }
     }
 
@@ -179,7 +179,7 @@ export class DiplomatAgent {
 
             return branchList;
         } catch (error: any) {
-            console.error(`[ERROR] Failed to detect branches: ${error.message}`);
+            logger.error(`Failed to detect branches: ${error.message}`);
             return [];
         }
     }
@@ -191,15 +191,15 @@ export class DiplomatAgent {
         const { execSync } = await import('child_process');
 
         try {
-            console.log(`[INFO] Diplomat: Pushing ${branch} to origin...`);
+            logger.diplomat(`Pushing ${branch} to origin...`);
             execSync(`git push -u origin ${branch}`, {
                 encoding: 'utf-8',
                 stdio: 'inherit'
             });
-            console.log(`[SUCCESS] Diplomat: Branch ${branch} pushed successfully.`);
+            logger.success(`Branch ${branch} pushed successfully.`);
             return true;
         } catch (error: any) {
-            console.error(`[ERROR] Failed to push branch: ${error.message}`);
+            logger.error(`Failed to push branch: ${error.message}`);
             return false;
         }
     }
@@ -260,16 +260,16 @@ export class DiplomatAgent {
      * Full workflow: Detect, Push, and Create PR for warden branches
      */
     async processAllWardenBranches(): Promise<string[]> {
-        console.log(`[INFO] Diplomat: Scanning for warden/* branches...`);
+        logger.diplomat(`Scanning for warden/* branches...`);
 
         const branches = await this.detectWardenBranches();
 
         if (branches.length === 0) {
-            console.log(`[INFO] Diplomat: No warden branches found.`);
+            logger.info(`No warden branches found.`);
             return [];
         }
 
-        console.log(`[INFO] Diplomat: Found ${branches.length} warden branch(es): ${branches.join(', ')}`);
+        logger.diplomat(`Found ${branches.length} warden branch(es): ${branches.join(', ')}`);
 
         const prUrls: string[] = [];
 
@@ -279,7 +279,7 @@ export class DiplomatAgent {
                 const pushed = await this.pushBranch(branch);
 
                 if (!pushed && this.octokit) {
-                    console.warn(`[WARNING] Skipping PR creation for ${branch} (push failed)`);
+                    logger.warn(`Skipping PR creation for ${branch} (push failed)`);
                     continue;
                 }
 
@@ -296,7 +296,7 @@ export class DiplomatAgent {
 
                 prUrls.push(prUrl);
             } catch (error: any) {
-                console.error(`[ERROR] Failed to process ${branch}: ${error.message}`);
+                logger.error(`Failed to process ${branch}: ${error.message}`);
             }
         }
 

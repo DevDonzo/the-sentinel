@@ -280,5 +280,95 @@ program
         }
     });
 
+program
+    .command('doctor')
+    .description('Diagnose common issues and suggest fixes')
+    .action(async () => {
+        logger.header('🩺 Warden Doctor');
+        
+        const { execSync } = await import('child_process');
+        const fs = await import('fs');
+        const path = await import('path');
+        
+        let issues = 0;
+        
+        // Check Node version
+        logger.section('Node.js');
+        try {
+            const nodeVersion = process.version;
+            const major = parseInt(nodeVersion.slice(1).split('.')[0], 10);
+            if (major >= 18) {
+                logger.success(`  Node ${nodeVersion} ✓`);
+            } else {
+                logger.error(`  Node ${nodeVersion} (requires v18+)`);
+                issues++;
+            }
+        } catch {
+            logger.error('  Could not detect Node version');
+            issues++;
+        }
+        
+        // Check Git
+        logger.section('Git');
+        try {
+            const gitVersion = execSync('git --version', { encoding: 'utf-8' }).trim();
+            logger.success(`  ${gitVersion} ✓`);
+        } catch {
+            logger.error('  Git not found');
+            issues++;
+        }
+        
+        // Check npm
+        logger.section('npm');
+        try {
+            const npmVersion = execSync('npm --version', { encoding: 'utf-8' }).trim();
+            logger.success(`  npm v${npmVersion} ✓`);
+        } catch {
+            logger.error('  npm not found');
+            issues++;
+        }
+        
+        // Check Snyk
+        logger.section('Snyk CLI');
+        try {
+            execSync('snyk --version', { encoding: 'utf-8', stdio: 'pipe' });
+            logger.success('  Snyk CLI installed ✓');
+        } catch {
+            logger.warn('  Snyk CLI not found (optional, will use npm audit)');
+        }
+        
+        // Check tokens
+        logger.section('Tokens');
+        if (process.env.GITHUB_TOKEN) {
+            logger.success('  GITHUB_TOKEN set ✓');
+        } else {
+            logger.warn('  GITHUB_TOKEN not set (required for PR creation)');
+        }
+        
+        if (process.env.SNYK_TOKEN) {
+            logger.success('  SNYK_TOKEN set ✓');
+        } else {
+            logger.warn('  SNYK_TOKEN not set (required for Snyk scanner)');
+        }
+        
+        // Check project
+        logger.section('Project');
+        const pkgPath = path.join(process.cwd(), 'package.json');
+        if (fs.existsSync(pkgPath)) {
+            logger.success('  package.json found ✓');
+        } else {
+            logger.error('  No package.json found');
+            issues++;
+        }
+        
+        // Summary
+        logger.section('Summary');
+        if (issues === 0) {
+            logger.success('All checks passed! Warden is ready to use.');
+        } else {
+            logger.error(`Found ${issues} issue(s) that need attention.`);
+        }
+    });
+
 // Parse arguments
 program.parse();

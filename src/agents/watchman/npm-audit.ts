@@ -83,7 +83,7 @@ export class NpmAuditScanner {
                 });
 
                 summary.total++;
-                if (summary.hasOwnProperty(severity)) {
+                if (Object.hasOwn(summary, severity)) {
                     summary[severity]++;
                 }
             }

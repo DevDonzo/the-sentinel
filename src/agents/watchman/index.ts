@@ -12,10 +12,10 @@ import * as path from 'path';
 import { SnykScanner, ScanResult } from './snyk';
 import { NpmAuditScanner } from './npm-audit';
 import { HtmlReportGenerator } from './html-report';
+import { logger } from '../../utils/logger';
 
 async function main() {
-    console.log('🛡️  THE WATCHMAN - Security Scanner Agent');
-    console.log('==========================================\n');
+    logger.header('🛡️  THE WATCHMAN - Security Scanner Agent');
 
     // Parse command line arguments
     const args = process.argv.slice(2);
@@ -40,7 +40,7 @@ async function main() {
                 process.exit(0);
             default:
                 if (args[i].startsWith('--')) {
-                    console.error(`Unknown option: ${args[i]}`);
+                    logger.error(`Unknown option: ${args[i]}`);
                     printHelp();
                     process.exit(1);
                 }
@@ -56,8 +56,8 @@ async function main() {
         results = await snykScanner.test();
         // SnykScanner saves JSON internally
     } catch (snykError: any) {
-        console.warn(`\n⚠️  Snyk scan failed: ${snykError.message}`);
-        console.warn('🔄 Switching to fallback scanner: npm audit');
+        logger.warn(`Snyk scan failed: ${snykError.message}`);
+        logger.info('Switching to fallback scanner: npm audit');
 
         // 2. Fallback to npm audit
         try {
@@ -69,9 +69,9 @@ async function main() {
             saveResults(results);
 
         } catch (auditError: any) {
-            console.error(`\n❌ All scanners failed!`);
-            console.error(`1. Snyk: ${snykError.message}`);
-            console.error(`2. npm audit: ${auditError.message}`);
+            logger.error('All scanners failed!');
+            logger.error(`Snyk: ${snykError.message}`);
+            logger.error(`npm audit: ${auditError.message}`);
             process.exit(2);
         }
     }
@@ -87,19 +87,19 @@ async function main() {
         const htmlGenerator = new HtmlReportGenerator();
         htmlGenerator.generate(results);
     } catch (reportError: any) {
-        console.error(`⚠️  Failed to generate HTML report: ${reportError.message}`);
+        logger.warn(`Failed to generate HTML report: ${reportError.message}`);
         // Non-fatal, continue to exit code check
     }
 
-    console.log(`\n✅ Scan completed successfully using [${scannerUsed}]`);
+    logger.success(`Scan completed successfully using [${scannerUsed}]`);
 
     // Exit with appropriate code
     const criticalCount = results.summary.critical + results.summary.high;
     if (criticalCount > 0) {
-        console.log(`\n⚠️  High priority vulnerabilities found: ${criticalCount}`);
+        logger.warn(`High priority vulnerabilities found: ${criticalCount}`);
         process.exit(1);
     } else {
-        console.log('\n✅ No high priority vulnerabilities found.');
+        logger.success('No high priority vulnerabilities found.');
         process.exit(0);
     }
 }
@@ -119,12 +119,12 @@ function saveResults(result: ScanResult): void {
     fs.writeFileSync(filepath, jsonContent);
     fs.writeFileSync(latestPath, jsonContent);
 
-    console.log(`💾 Scan results saved to: ${filepath}`);
-    console.log(`💾 Latest results: ${latestPath}`);
+    logger.info(`Scan results saved to: ${filepath}`);
+    logger.info(`Latest results: ${latestPath}`);
 }
 
 function printHelp() {
-    console.log(`
+    logger.info(`
 Usage: npx ts-node src/agents/watchman/index.ts [options]
 
 Options:

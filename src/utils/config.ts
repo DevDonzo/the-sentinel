@@ -175,10 +175,10 @@ export class ConfigManager {
     }
 
     /**
-     * Get current configuration
+     * Get current configuration (returns a deep copy)
      */
     getConfig(): WardenConfig {
-        return { ...this.config };
+        return JSON.parse(JSON.stringify(this.config));
     }
 
     /**

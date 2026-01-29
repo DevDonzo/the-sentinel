@@ -1,5 +1,4 @@
 import { validator } from '../src/utils/validator';
-import * as fs from 'fs';
 import * as path from 'path';
 
 describe('Validator', () => {

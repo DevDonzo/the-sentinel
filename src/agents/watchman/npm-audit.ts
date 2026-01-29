@@ -16,6 +16,43 @@ const SEVERITY_MAPPING: Record<string, Vulnerability['severity']> = {
 
 export class NpmAuditScanner {
 
+    /**
+     * Parse severity string to normalized severity level
+     */
+    parseSeverity(severityStr: string): Vulnerability['severity'] {
+        const normalized = (severityStr || 'low').toLowerCase();
+        return SEVERITY_MAPPING[normalized] || 'medium';
+    }
+
+    /**
+     * Format npm audit vulnerabilities object into our standard format
+     */
+    formatVulnerabilities(data: any): Vulnerability[] {
+        const vulnerabilities: Vulnerability[] = [];
+
+        if (!data.vulnerabilities) {
+            return vulnerabilities;
+        }
+
+        for (const [key, val] of Object.entries(data.vulnerabilities)) {
+            const vuln = val as any;
+            const severity = this.parseSeverity(vuln.severity);
+
+            vulnerabilities.push({
+                id: `NPM-${key}-${vuln.via?.[0]?.source || 'audit'}`,
+                title: typeof vuln.via?.[0] === 'object' ? vuln.via[0].title : 'Vulnerability found via npm audit',
+                severity,
+                packageName: vuln.name,
+                version: vuln.range || 'unknown',
+                fixedIn: vuln.fixAvailable ? ['npm audit fix'] : [],
+                description: `Dependency path: ${key}`,
+                cvssScore: undefined
+            });
+        }
+
+        return vulnerabilities;
+    }
+
     async scan(): Promise<ScanResult> {
         logger.watchman('Running npm audit fallback...');
 
@@ -51,7 +88,7 @@ export class NpmAuditScanner {
             throw new Error("Failed to parse npm audit JSON output");
         }
 
-        const vulnerabilities: Vulnerability[] = [];
+        const vulnerabilities = this.formatVulnerabilities(data);
         const summary = {
             total: 0,
             critical: 0,
@@ -60,38 +97,12 @@ export class NpmAuditScanner {
             low: 0
         };
 
-        // npm audit structure (v7+)
-        // data.vulnerabilities is an object where keys are package names
-
-        if (data.vulnerabilities) {
-            for (const [key, val] of Object.entries(data.vulnerabilities)) {
-                const vuln = val as any;
-
-                // Normalize severity (handle npm's 'moderate' and 'info')
-                const severityStr = (vuln.severity || 'low').toLowerCase();
-                const severity = SEVERITY_MAPPING[severityStr] || 'low';
-
-                vulnerabilities.push({
-                    id: `NPM-${key}-${vuln.via?.[0]?.source || 'audit'}`, // synthesized ID
-                    title: typeof vuln.via?.[0] === 'object' ? vuln.via[0].title : 'Vulnerability found via npm audit',
-                    severity,
-                    packageName: vuln.name,
-                    version: vuln.range || 'unknown',
-                    fixedIn: vuln.fixAvailable ? ['npm audit fix'] : [],
-                    description: `Dependency path: ${key}`,
-                    cvssScore: undefined
-                });
-
-                summary.total++;
-                if (Object.hasOwn(summary, severity)) {
-                    summary[severity]++;
-                }
+        for (const vuln of vulnerabilities) {
+            summary.total++;
+            if (Object.hasOwn(summary, vuln.severity)) {
+                summary[vuln.severity]++;
             }
         }
-
-        // Note: We rely on our manual count above to ensure consistency between
-        // the vulnerabilities list and the summary counts, rather than using
-        // data.metadata which might mismatch or use non-standard keys.
 
         return {
             timestamp: new Date().toISOString(),

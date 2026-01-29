@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { ScanResult } from './snyk';
+import { logger } from '../../utils/logger';
 
 export class HtmlReportGenerator {
     private outputDir: string;
@@ -198,6 +199,6 @@ export class HtmlReportGenerator {
 
         const filepath = path.join(this.outputDir, 'scan-results.html');
         fs.writeFileSync(filepath, html);
-        console.log(`📊 HTML Report generated: ${filepath}`);
+        logger.success(`HTML Report generated: ${filepath}`);
     }
 }

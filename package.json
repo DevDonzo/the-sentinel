@@ -67,11 +67,13 @@
     "ora": "^5.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.9",
+    "@types/xml2js": "^0.4.14",
     "jest": "^30.2.0",
     "snyk": "^1.1302.0",
     "ts-jest": "^29.4.6"

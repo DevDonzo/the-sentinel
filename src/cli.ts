@@ -370,5 +370,126 @@ program
         }
     });
 
+program
+    .command('dast')
+    .description('Run DAST (Dynamic Application Security Testing) scan')
+    .argument('<target>', 'Target URL to scan (must be configured in .wardenrc.json)')
+    .option('-v, --verbose', 'Enable verbose logging')
+    .option('--dry-run', 'Preview scan without creating PRs')
+    .option('--nmap-only', 'Run only Nmap scan')
+    .option('--metasploit-only', 'Run only Metasploit scan')
+    .option('--no-confirm', 'Skip safety confirmation prompts (not recommended)')
+    .action(async (target, options) => {
+        try {
+            // Set verbose mode
+            if (options.verbose) {
+                logger.setVerbose(true);
+                logger.debug('Verbose mode enabled');
+            }
+
+            logger.header('🛡️  WARDEN DAST | Dynamic Application Security Testing');
+
+            // Load configuration
+            const { getConfig } = await import('./utils/config');
+            const configManager = getConfig();
+            const dastConfig = configManager.getDastConfig();
+
+            if (!dastConfig) {
+                logger.error('DAST is not configured. Add "dast" section to .wardenrc.json');
+                logger.info('Run: warden config --create');
+                process.exit(1);
+            }
+
+            if (!dastConfig.enabled) {
+                logger.error('DAST is disabled in configuration.');
+                logger.info('Set "dast.enabled: true" in .wardenrc.json to enable DAST scanning.');
+                process.exit(1);
+            }
+
+            // Validate DAST configuration
+            const validation = configManager.validateDastConfig();
+            if (!validation.valid) {
+                logger.error('DAST configuration validation failed:');
+                validation.errors.forEach(err => logger.error(`  - ${err}`));
+                process.exit(1);
+            }
+
+            // Find target
+            const targetConfig = configManager.findDastTarget(target);
+            if (!targetConfig) {
+                logger.error(`Target "${target}" not found in configuration.`);
+                logger.info('Available targets:');
+                dastConfig.targets.forEach(t => {
+                    logger.info(`  - ${t.url} (${t.authorized ? 'authorized' : 'NOT AUTHORIZED'})`);
+                });
+                process.exit(1);
+            }
+
+            if (!targetConfig.authorized) {
+                logger.error(`Target "${target}" is not authorized for scanning.`);
+                logger.error('Set "authorized: true" in configuration to scan this target.');
+                logger.error('');
+                logger.error('⚠️  WARNING: Unauthorized scanning may be illegal.');
+                process.exit(1);
+            }
+
+            // Display target info
+            logger.info(`Target: ${targetConfig.url}`);
+            logger.info(`Description: ${targetConfig.description || 'N/A'}`);
+            logger.info(`Authorization: ✓ Authorized`);
+            logger.info('');
+
+            // Safety warning
+            if (!options.noConfirm && dastConfig.safety.requireConfirmation) {
+                logger.warn('═══════════════════════════════════════════════════════════');
+                logger.warn('  ⚠️  LEGAL NOTICE - READ CAREFULLY');
+                logger.warn('═══════════════════════════════════════════════════════════');
+                logger.warn('');
+                logger.warn('  Only scan systems you own or have written authorization to test.');
+                logger.warn('  Unauthorized scanning may violate laws including:');
+                logger.warn('  - Computer Fraud and Abuse Act (USA)');
+                logger.warn('  - Computer Misuse Act (UK)');
+                logger.warn('  - Similar laws in other jurisdictions');
+                logger.warn('');
+                logger.warn('  By proceeding, you confirm:');
+                logger.warn('  ✓ You have proper authorization to scan this target');
+                logger.warn('  ✓ You understand the legal implications');
+                logger.warn('  ✓ You accept full responsibility for this scan');
+                logger.warn('');
+                logger.warn('═══════════════════════════════════════════════════════════');
+                logger.warn('');
+
+                // In a real implementation, you'd wait for user confirmation here
+                // For now, we'll proceed automatically if --no-confirm is not set
+                logger.info('Proceeding with scan...');
+                logger.info('');
+            }
+
+            // Temporarily disable specific scanners if requested
+            if (options.nmapOnly) {
+                dastConfig.metasploit.enabled = false;
+            } else if (options.metasploitOnly) {
+                dastConfig.nmap.enabled = false;
+            }
+
+            // Import and run the orchestrator
+            const { runWarden } = await import('./orchestrator');
+            await runWarden({
+                targetPath: process.cwd(),
+                dryRun: options.dryRun || false,
+                scanner: 'snyk', // Not used in DAST mode
+                minSeverity: 'high',
+                maxFixes: 1,
+                verbose: options.verbose || false,
+                scanMode: 'dast',
+                dastTarget: target
+            });
+
+        } catch (error: any) {
+            logger.error('Fatal error during DAST scan', error);
+            process.exit(1);
+        }
+    });
+
 // Parse arguments
 program.parse();

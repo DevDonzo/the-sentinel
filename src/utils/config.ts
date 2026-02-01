@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
+import { DastConfig, DastTarget } from '../types';
 
 export interface WardenConfig {
     // Scanner settings
@@ -56,6 +57,9 @@ export interface WardenConfig {
         vulnerabilities: string[];
         severities: string[];
     };
+
+    // DAST settings (optional)
+    dast?: DastConfig;
 }
 
 const DEFAULT_CONFIG: WardenConfig = {
@@ -262,6 +266,105 @@ export class ConfigManager {
     print(): void {
         logger.info('Current Configuration:');
         console.log(JSON.stringify(this.config, null, 2));
+    }
+
+    /**
+     * Get DAST configuration
+     */
+    getDastConfig(): DastConfig | null {
+        return this.config.dast || null;
+    }
+
+    /**
+     * Get default DAST configuration
+     */
+    static getDefaultDastConfig(): DastConfig {
+        return {
+            enabled: false,
+            targets: [],
+            nmap: {
+                enabled: true,
+                scanType: 'standard',
+                portRange: '1-1000',
+                timing: 3,
+                options: ['-sV'],
+                outputFormat: 'xml'
+            },
+            metasploit: {
+                enabled: false,
+                mode: 'scan-only',
+                modules: [],
+                timeout: 60000
+            },
+            safety: {
+                requireConfirmation: true,
+                authorizedTargetsOnly: true,
+                disableExploits: true,
+                maxScanDuration: 1800000
+            }
+        };
+    }
+
+    /**
+     * Validate DAST configuration
+     */
+    validateDastConfig(): { valid: boolean; errors: string[] } {
+        const errors: string[] = [];
+        const dastConfig = this.config.dast;
+
+        if (!dastConfig) {
+            return { valid: true, errors: [] }; // DAST is optional
+        }
+
+        // Validate targets
+        if (!Array.isArray(dastConfig.targets)) {
+            errors.push('dast.targets must be an array');
+        } else {
+            dastConfig.targets.forEach((target, index) => {
+                if (!target.url) {
+                    errors.push(`dast.targets[${index}] missing required field: url`);
+                }
+                if (typeof target.authorized !== 'boolean') {
+                    errors.push(`dast.targets[${index}] missing required field: authorized`);
+                }
+                if (target.authorized !== true) {
+                    errors.push(`dast.targets[${index}] must have authorized: true to be scanned`);
+                }
+            });
+        }
+
+        // Validate Nmap config
+        if (dastConfig.nmap) {
+            const validScanTypes = ['quick', 'standard', 'comprehensive', 'stealth'];
+            if (!validScanTypes.includes(dastConfig.nmap.scanType)) {
+                errors.push('dast.nmap.scanType must be one of: quick, standard, comprehensive, stealth');
+            }
+        }
+
+        // Validate Metasploit config
+        if (dastConfig.metasploit) {
+            const validModes = ['scan-only', 'safe-exploits', 'full'];
+            if (!validModes.includes(dastConfig.metasploit.mode)) {
+                errors.push('dast.metasploit.mode must be one of: scan-only, safe-exploits, full');
+            }
+        }
+
+        return {
+            valid: errors.length === 0,
+            errors
+        };
+    }
+
+    /**
+     * Find target configuration by URL
+     */
+    findDastTarget(targetUrl: string): DastTarget | null {
+        const dastConfig = this.config.dast;
+        if (!dastConfig || !dastConfig.targets) {
+            return null;
+        }
+
+        return dastConfig.targets.find(t => t.url === targetUrl) || null;
     }
 }
 

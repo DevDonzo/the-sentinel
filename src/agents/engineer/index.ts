@@ -4,6 +4,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { GitManager } from './git';
 import { logger } from '../../utils/logger';
+import { Vulnerability as DastVulnerability, ScanMode } from '../../types';
 
 const execAsync = promisify(exec);
 
@@ -35,6 +36,8 @@ interface ScanResults {
         medium: number;
         low: number;
     };
+    scanMode?: ScanMode;
+    scanner?: string;
 }
 
 const SEVERITY_PRIORITY: Record<string, number> = {
@@ -117,6 +120,14 @@ export class EngineerAgent {
         logger.engineer('Analyzing scan results...');
 
         const scanResults = await this.readScanResults(scanResultsPath);
+
+        // Check if this is a DAST scan
+        if (scanResults.scanMode === 'dast') {
+            logger.info('DAST scan detected - generating advisory recommendations');
+            return this.generateDastAdvisories(scanResults);
+        }
+
+        // SAST mode - traditional auto-fix
         const prioritized = this.prioritizeVulnerabilities(scanResults.vulnerabilities);
 
         logger.info(`Found ${scanResults.summary.total} vulnerabilities`);
@@ -129,6 +140,131 @@ export class EngineerAgent {
         }));
 
         return diagnoses;
+    }
+
+    /**
+     * Generate DAST advisory recommendations (no auto-fix)
+     */
+    private generateDastAdvisories(scanResults: ScanResults): Diagnosis[] {
+        logger.info(`Found ${scanResults.summary.total} DAST findings`);
+
+        const dastVulns = scanResults.vulnerabilities as unknown as DastVulnerability[];
+        const prioritized = this.prioritizeVulnerabilities(scanResults.vulnerabilities);
+
+        const advisories: Diagnosis[] = prioritized.map((vuln) => {
+            const dastVuln = dastVulns.find(v => v.id === vuln.id);
+
+            return {
+                vulnerabilityId: vuln.id,
+                description: this.formatDastFinding(vuln, dastVuln),
+                suggestedFix: this.generateDastRemediation(vuln, dastVuln),
+                filesToModify: [] // No auto-fix for DAST
+            };
+        });
+
+        return advisories;
+    }
+
+    /**
+     * Format DAST finding for human readability
+     */
+    private formatDastFinding(vuln: Vulnerability, dastVuln?: DastVulnerability): string {
+        let description = `${vuln.title} (${vuln.severity.toUpperCase()})`;
+
+        if (dastVuln?.targetHost) {
+            description += `\nHost: ${dastVuln.targetHost}`;
+        }
+
+        if (dastVuln?.targetPort) {
+            description += `\nPort: ${dastVuln.targetPort}`;
+        }
+
+        if (dastVuln?.service) {
+            description += `\nService: ${dastVuln.service}`;
+            if (dastVuln.serviceVersion) {
+                description += ` (${dastVuln.serviceVersion})`;
+            }
+        }
+
+        description += `\n\n${vuln.description}`;
+
+        if (dastVuln?.findings && dastVuln.findings.length > 0) {
+            description += '\n\nTechnical Details:';
+            dastVuln.findings.forEach(finding => {
+                description += `\n  - ${finding}`;
+            });
+        }
+
+        return description;
+    }
+
+    /**
+     * Generate remediation steps for DAST findings
+     */
+    private generateDastRemediation(_vuln: Vulnerability, dastVuln?: DastVulnerability): string {
+        const steps: string[] = [];
+
+        steps.push('**Manual Remediation Required**');
+        steps.push('');
+
+        // Port-specific remediation
+        if (dastVuln?.targetPort) {
+            const port = dastVuln.targetPort;
+
+            // Database ports
+            if ([3306, 5432, 27017, 6379, 9200, 9300].includes(port)) {
+                steps.push('1. Verify database exposure is intentional');
+                steps.push('2. Implement firewall rules to restrict access to trusted IPs');
+                steps.push('3. Enable authentication with strong passwords');
+                steps.push('4. Use VPN or SSH tunneling for remote access');
+                steps.push('5. Update to latest patch version');
+            }
+            // Insecure protocols
+            else if ([21, 23].includes(port)) {
+                steps.push('**CRITICAL: Disable this insecure protocol immediately**');
+                steps.push('1. Stop the service');
+                steps.push('2. Replace with secure alternative (SSH/SFTP)');
+                steps.push('3. If required, restrict to internal network only');
+            }
+            // HTTP services
+            else if ([80, 443, 8080, 8443].includes(port)) {
+                steps.push('1. Ensure HTTPS is enabled with valid TLS certificate');
+                steps.push('2. Configure security headers (HSTS, CSP, X-Frame-Options)');
+                steps.push('3. Keep web server software up to date');
+                steps.push('4. Review application security controls');
+            }
+            // Default remediation
+            else {
+                steps.push('1. Review if this port needs to be exposed');
+                steps.push('2. Implement network segmentation');
+                steps.push('3. Use firewall rules to restrict access');
+                steps.push('4. Update service to latest version');
+            }
+        }
+
+        // Service-specific remediation
+        if (dastVuln?.service) {
+            const service = dastVuln.service.toLowerCase();
+
+            if (service.includes('ssh')) {
+                steps.push('');
+                steps.push('**SSH Hardening:**');
+                steps.push('- Disable password authentication');
+                steps.push('- Use SSH keys only');
+                steps.push('- Implement fail2ban for brute-force protection');
+            }
+        }
+
+        // Exploit available warning
+        if (dastVuln?.exploitAvailable) {
+            steps.push('');
+            steps.push('⚠️  **EXPLOIT AVAILABLE** - Prioritize remediation');
+            if (dastVuln.exploitModule) {
+                steps.push(`Module: ${dastVuln.exploitModule}`);
+            }
+        }
+
+        return steps.join('\n');
     }
 
     /**

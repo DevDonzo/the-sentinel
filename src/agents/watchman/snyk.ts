@@ -27,10 +27,14 @@ export interface ScanResult {
         medium: number;
         low: number;
     };
+    scanner?: string;
+    projectPath?: string;
+    scanMode?: string;
     metadata?: {
         scanDuration?: number;
         retryCount?: number;
         errors?: string[];
+        [key: string]: any;
     };
 }
 

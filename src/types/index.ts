@@ -5,6 +5,8 @@
  */
 
 export type Severity = 'critical' | 'high' | 'medium' | 'low';
+export type ScannerType = 'snyk' | 'npm-audit' | 'nmap' | 'metasploit';
+export type ScanMode = 'sast' | 'dast';
 
 export interface Vulnerability {
     id: string;
@@ -17,6 +19,14 @@ export interface Vulnerability {
     cvssScore?: number;
     cwe?: string[];
     references?: string[];
+    // DAST-specific fields
+    targetHost?: string;
+    targetPort?: number;
+    service?: string;
+    serviceVersion?: string;
+    exploitAvailable?: boolean;
+    exploitModule?: string;
+    findings?: string[];
 }
 
 export interface ScanSummary {
@@ -31,8 +41,17 @@ export interface ScanResult {
     timestamp: string;
     vulnerabilities: Vulnerability[];
     summary: ScanSummary;
-    scanner?: 'snyk' | 'npm-audit';
+    scanner?: ScannerType;
     projectPath?: string;
+    scanMode?: ScanMode;
+    scanMetadata?: {
+        target?: string;
+        scanType?: string;
+        duration?: number;
+        nmapVersion?: string;
+        msfVersion?: string;
+        [key: string]: any;
+    };
 }
 
 export interface FixResult {
@@ -64,6 +83,7 @@ export interface WardenConfig {
     outputFormat: 'text' | 'json';
     verbose: boolean;
     dryRun: boolean;
+    dast?: DastConfig;
 }
 
 export interface WardenReport {
@@ -106,4 +126,44 @@ export interface PrConfig {
     body: string;
     severity?: string;
     labels?: string[];
+}
+
+// DAST Configuration Types
+export interface DastTarget {
+    url: string;
+    description?: string;
+    authorized: boolean;
+    ports?: string;
+    excludePorts?: string;
+}
+
+export interface NmapConfig {
+    enabled: boolean;
+    scanType: 'quick' | 'standard' | 'comprehensive' | 'stealth';
+    portRange?: string;
+    timing?: number;
+    options?: string[];
+    outputFormat?: 'xml' | 'normal';
+}
+
+export interface MetasploitConfig {
+    enabled: boolean;
+    mode: 'scan-only' | 'safe-exploits' | 'full';
+    modules?: string[];
+    timeout?: number;
+}
+
+export interface SafetyConfig {
+    requireConfirmation: boolean;
+    authorizedTargetsOnly: boolean;
+    disableExploits: boolean;
+    maxScanDuration?: number;
+}
+
+export interface DastConfig {
+    enabled: boolean;
+    targets: DastTarget[];
+    nmap: NmapConfig;
+    metasploit: MetasploitConfig;
+    safety: SafetyConfig;
 }

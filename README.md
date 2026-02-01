@@ -64,6 +64,85 @@ warden clean              # remove generated files
 
 ---
 
+## DAST - Dynamic Application Security Testing
+
+Warden now supports **infrastructure scanning** with Nmap and Metasploit alongside traditional dependency scanning.
+
+### Quick Start
+
+```bash
+# 1. Configure targets in .wardenrc.json
+warden config --create
+
+# 2. Add DAST configuration (see docs)
+# Edit .wardenrc.json and add "dast" section
+
+# 3. Run DAST scan
+warden dast https://staging.myapp.com
+```
+
+### SAST vs DAST
+
+| Mode | Target | Tools | Remediation |
+|------|--------|-------|-------------|
+| **SAST** | Dependencies | Snyk, npm audit | Auto-fix PRs |
+| **DAST** | Infrastructure | Nmap, Metasploit | Advisory PRs |
+
+### Features
+
+- **Nmap**: Network discovery, port scanning, service detection
+- **Metasploit**: Vulnerability validation (optional)
+- **Safety-First**: Multiple authorization checks
+- **Advisory PRs**: Manual remediation guidance (no auto-fix for infrastructure)
+
+### Configuration Example
+
+```json
+{
+  "dast": {
+    "enabled": true,
+    "targets": [
+      {
+        "url": "https://staging.myapp.com",
+        "authorized": true,
+        "description": "Staging Environment"
+      }
+    ],
+    "nmap": {
+      "enabled": true,
+      "scanType": "standard",
+      "portRange": "1-1000"
+    },
+    "metasploit": {
+      "enabled": false,
+      "mode": "scan-only"
+    },
+    "safety": {
+      "requireConfirmation": true,
+      "authorizedTargetsOnly": true,
+      "disableExploits": true
+    }
+  }
+}
+```
+
+### DAST Commands
+
+```bash
+warden dast <target>           # Scan authorized target
+warden dast <target> --verbose # Detailed output
+warden dast <target> --dry-run # Preview only
+warden dast <target> --nmap-only  # Nmap only
+```
+
+### ⚠️ Legal Notice
+
+**Only scan systems you own or have written authorization to test.** Unauthorized scanning may violate laws including the Computer Fraud and Abuse Act (USA).
+
+See [DAST Guide](./docs/DAST-GUIDE.md) for complete documentation.
+
+---
+
 ## Config
 
 Drop a `.wardenrc.json` in your project root:

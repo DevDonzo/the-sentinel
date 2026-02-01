@@ -5,6 +5,26 @@ All notable changes to Warden will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-01
+
+### ✨ Added
+
+- **DAST Integration (Dynamic Application Security Testing)**:
+  - **Nmap Scanner**: Network discovery, port scanning, and service detection.
+  - **Metasploit Scanner**: Vulnerability verification and controlled exploitation.
+  - **Advisory PRs**: Findings generate detailed infrastructure security advisories instead of auto-fixes.
+  - **Safety System**: Strict authorization checks, legal warnings, and confirmation prompts.
+  - **Configurations**: New `dast` section in `.wardenrc.json`.
+  - **Documentation**: Added DAST-GUIDE, NMAP-CONFIG, and METASPLOIT-CONFIG.
+
+### 🔧 Changed
+
+- **CLI**: Added `warden dast` command.
+- **Orchestrator**: Updated to support dual-mode operation (SAST/DAST).
+- **Scanner Interface**: Extended to support infrastructure targets.
+
+---
+
 ## [1.2.0] - 2026-01-29
 
 ### ✨ Added
